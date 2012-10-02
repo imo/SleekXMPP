@@ -142,7 +142,7 @@ class ClientXMPP(BaseXMPP):
         :param use_ssl: Indicates if the older SSL connection method
                         should be used. Defaults to ``False``.
         """
-        self.session_started_event.clear()
+        self.session_started_event = False
 
         # If an address was provided, disable using DNS SRV lookup;
         # otherwise, use the domain from the client JID with the standard
