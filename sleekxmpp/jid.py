@@ -11,7 +11,7 @@
     :license: MIT, see LICENSE for more details
 """
 
-from __future__ import unicode_literals
+#from __future__ import unicode_literals
 
 import re
 import socket
@@ -126,9 +126,9 @@ def _parse_jid(data):
 
     (node, domain, resource) = match.groups()
 
-    node = _validate_node(node)
-    domain = _validate_domain(domain)
-    resource = _validate_resource(resource)
+#    node = _validate_node(node)
+#    domain = _validate_domain(domain)
+#    resource = _validate_resource(resource)
 
     return node, domain, resource
 
