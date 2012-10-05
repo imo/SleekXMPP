@@ -54,7 +54,7 @@ def map_input(data, tables=None):
         if replacement is None:
             replacement = char
         result.append(replacement)
-    return ''.join(result)
+    return u''.join(result)
 
 
 def normalize(data, nfkc=True):
