@@ -12,7 +12,8 @@
     :license: MIT, see LICENSE for more details
 """
 
-from __future__ import with_statement, unicode_literals
+from __future__ import with_statement
+#, unicode_literals
 
 import sys
 import logging
@@ -83,7 +84,7 @@ class BaseXMPP(XMLStream):
         #: redirections that will be followed before quitting.
         self.max_redirects = 5
 
-        self.session_bind_event = threading.Event()
+        self.session_bind_event = False
 
         #: A dictionary mapping plugin names to plugins.
         self.plugin = PluginManager(self)

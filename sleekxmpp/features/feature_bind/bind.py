@@ -51,7 +51,7 @@ class FeatureBind(BasePlugin):
         self.xmpp.set_jid(response['bind']['jid'])
         self.xmpp.bound = True
         self.xmpp.event('session_bind', self.xmpp.boundjid, direct=True)
-        self.xmpp.session_bind_event.set()
+        self.xmpp.session_bind_event = True
 
         self.xmpp.features.add('bind')
 
@@ -60,5 +60,5 @@ class FeatureBind(BasePlugin):
         if 'session' not in features['features']:
             log.debug("Established Session")
             self.xmpp.sessionstarted = True
-            self.xmpp.session_started_event.set()
+            self.xmpp.session_started_event = True
             self.xmpp.event("session_start")

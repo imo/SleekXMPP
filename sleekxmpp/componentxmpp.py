@@ -156,8 +156,8 @@ class ComponentXMPP(BaseXMPP):
 
         :param xml: The reply handshake stanza.
         """
-        self.session_bind_event.set()
-        self.session_started_event.set()
+        self.session_bind_event = True
+        self.session_started_event = True
         self.event("session_bind", self.boundjid, direct=True)
         self.event("session_start")
 

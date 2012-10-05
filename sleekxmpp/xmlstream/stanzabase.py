@@ -12,7 +12,8 @@
     :license: MIT, see LICENSE for more details
 """
 
-from __future__ import with_statement, unicode_literals
+from __future__ import with_statement
+#, unicode_literals
 
 import copy
 import logging

@@ -322,7 +322,7 @@ class BasePlugin(object):
         """
         if self.xmpp is not None:
             self.xmpp.add_event_handler('session_bind', self.session_bind)
-            if self.xmpp.session_bind_event.is_set():
+            if self.xmpp.session_bind_event:
                 self.session_bind(self.xmpp.boundjid.full)
         self.plugin_init()
         log.debug('Loaded Plugin: %s', self.description)

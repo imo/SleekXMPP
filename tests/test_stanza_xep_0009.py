@@ -8,7 +8,7 @@
     See the file LICENSE for copying permission.
 """
 
-from __future__ import unicode_literals
+#from __future__ import unicode_literals
 
 import base64
 import sys

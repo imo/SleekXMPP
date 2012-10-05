@@ -240,7 +240,7 @@ class XEP_0198(BasePlugin):
         self._handle_ack(stanza)
         for id, stanza in self.unacked_queue:
             self.xmpp.send(stanza, now=True, use_filters=False)
-        self.xmpp.session_started_event.set()
+        self.xmpp.session_started_event = True
         self.xmpp.event('session_resumed', stanza)
 
     def _handle_failed(self, stanza):
