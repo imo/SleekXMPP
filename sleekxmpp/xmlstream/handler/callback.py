@@ -9,8 +9,11 @@
     :license: MIT, see LICENSE for more details
 """
 
+import logging
 from sleekxmpp.xmlstream.handler.base import BaseHandler
+from sleekxmpp.xmlstream.xmlstream import RestartStream
 
+log = logging.getLogger(__name__)
 
 class Callback(BaseHandler):
 
@@ -73,7 +76,13 @@ class Callback(BaseHandler):
                               :meth:`prerun()`. Defaults to ``False``.
         """
         if not self._instream or instream:
-            self._pointer(payload)
+            try:
+                self._pointer(payload)
+            except RestartStream:
+                raise
+            except:
+                log.error("error", exc_info=True)
+                raise
             if self._once:
                 self._destroy = True
                 del self._pointer
