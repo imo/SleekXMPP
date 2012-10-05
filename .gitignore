@@ -8,3 +8,6 @@ docs/_build/
 .coverage
 sleekxmpp.egg-info/
 .ropeproject/
+.project
+.pydevproject
+.settings/
