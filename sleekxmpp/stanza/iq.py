@@ -5,6 +5,7 @@
 
     See the file LICENSE for copying permission.
 """
+import greenlet
 
 from sleekxmpp.stanza.rootstanza import RootStanza
 from sleekxmpp.xmlstream import StanzaBase, ET
@@ -194,12 +195,19 @@ class Iq(RootStanza):
             StanzaBase.send(self, now=now)
             return handler_name
         elif block and self['type'] in ('get', 'set'):
-            waitfor = Waiter('IqWait_%s' % self['id'], MatcherId(self['id']))
-            self.stream.register_handler(waitfor)
+            current = greenlet.getcurrent()
+
+            def cb(response):
+                current.switch(response)
+
+            handler_name = 'IqCallback_%s' % self['id']
+            handler = Callback(handler_name,
+                               MatcherId(self['id']),
+                               cb,
+                               once=True)
+            self.stream.register_handler(handler)
             StanzaBase.send(self, now=now)
-            result = waitfor.wait(timeout)
-            if not result:
-                raise IqTimeout(self)
+            result = current.parent.switch()
             if result['type'] == 'error':
                 raise IqError(result)
             return result
