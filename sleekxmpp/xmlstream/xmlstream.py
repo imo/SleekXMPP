@@ -12,7 +12,14 @@
     :license: MIT, see LICENSE for more details
 """
 
-from __future__ import with_statement, unicode_literals
+from __future__ import with_statement
+#, unicode_literals
+
+class RestartStream(Exception):
+    """
+    Exception to restart stream processing, including
+    resending the stream header.
+    """
 
 import base64
 import copy
@@ -41,8 +48,6 @@ from sleekxmpp.xmlstream.resolver import resolve, default_resolver
 #-----------------------------------------------------------------------------
 #                                IMO IMPORTS
 #-----------------------------------------------------------------------------
-from imop import imoasynepoll as asyncore
-from imop import imoasynchat as asynchat
 from imop.falcon.SmoothXMPP import XMPPConnection
 import greenlet
 
@@ -88,13 +93,6 @@ RECONNECT_MAX_ATTEMPTS = None
 
 
 log = logging.getLogger(__name__)
-
-
-class RestartStream(Exception):
-    """
-    Exception to restart stream processing, including
-    resending the stream header.
-    """
 
 
 class XMLStream(object):
@@ -411,9 +409,8 @@ class XMLStream(object):
         ID values. Using this method ensures that all new ID values
         are unique in this stream.
         """
-        with self._id_lock:
-            self._id += 1
-            return self.get_id()
+        self._id += 1
+        return self.get_id()
 
     def get_id(self):
         """Return the current unique stream ID in hexadecimal form."""
@@ -454,7 +451,7 @@ class XMLStream(object):
 
         connected = self.state.transition('disconnected', 'connected',
                                           func=self._connect)
-        return connected or True        # Assume the best!
+        return connected
 
     def _connect(self):
         if self.default_domain:
@@ -589,7 +586,7 @@ class XMLStream(object):
                               args=(reconnect, wait, send_close))
 
     def process_xml(self, element):
-        print "ELEMENT: %r" % element
+        log.debug("ELEMENT: %s", element)
         self.__spawn_event(element)
 
     def _disconnect(self, reconnect=False, wait=None, send_close=True):
@@ -623,7 +620,8 @@ class XMLStream(object):
         self.session_started_event = False
         self.stop = True
         try:
-            self.xmpp_connection.socket.shutdown(Socket.SHUT_RDWR)
+            if self.xmpp_connection.socket is not None:
+                self.xmpp_connection.socket.shutdown(Socket.SHUT_RDWR)
             self.xmpp_connection.handle_close()
         except Socket.error:
             pass
@@ -745,7 +743,7 @@ class XMLStream(object):
                              (cert_ttl.seconds + cert_ttl.days * 24 * 3600)
                              * 10**6) / 10**6
 
-        log.info('CERT: Time until certificate expiration: %s' % cert_ttl)
+        log.info('CERT: Time until certificate expiration: %s', cert_ttl)
 
         #$ TODO: Fix cert expiration
         #$self.schedule('Certificate Expiration',
@@ -992,11 +990,11 @@ class XMLStream(object):
 
             out_data = copy.copy(data) if len(handlers) > 1 else data
 
-            print("Creating greenelet! %s" % (handler, ))
+            log.debug("Creating greenlet! %s", handler)
             g = greenlet.greenlet(handler[0])
             self.event_greenlets.append(g)
 
-            print(g.switch(out_data))
+            g.switch(out_data)
 
             if handler[2]:
                 # If the handler is disposable, we will go ahead and
@@ -1007,7 +1005,7 @@ class XMLStream(object):
                     h_index = self.__event_handlers[name].index(handler)
                     self.__event_handlers[name].pop(h_index)
                 except:
-                    pass
+                    log.error("error", exc_info=True)
 
     def schedule(self, name, seconds, callback, args=None,
                  kwargs=None, repeat=False):
@@ -1165,7 +1163,7 @@ class XMLStream(object):
         else:
             self.xmpp_connection.push(data)
         """
-        print("sending: %r" % data)
+        log.info("sending: %s", data)
         self.xmpp_connection.push(data.encode('utf-8'))
         return True
 
@@ -1209,7 +1207,7 @@ class XMLStream(object):
         # Convert the raw XML object into a stanza object. If no registered
         # stanza type applies, a generic StanzaBase stanza will be used.
         stanza = self._build_stanza(xml)
-        print "Stanza: '%r' xml '%r'" % (stanza, xml)
+        #print "Stanza: '%r' xml '%r'" % (stanza, xml)
 
         for filter in self.__filters['in']:
             if stanza is not None:
@@ -1217,7 +1215,7 @@ class XMLStream(object):
         if stanza is None:
             return
 
-        log.debug("RECV: %s", stanza)
+        log.info("RECV: %s", stanza)
 
         # Match the stanza against registered handlers. Handlers marked
         # to run "in stream" will be executed immediately; the rest will
@@ -1230,8 +1228,10 @@ class XMLStream(object):
             else:
                 stanza_copy = stanza
             handler.prerun(stanza_copy)
-
-            g = greenlet.greenlet(handler)
+            
+            log.debug("Calling handler: %s", handler)
+            
+            g = greenlet.greenlet(handler.run)
             self.event_greenlets.append(g)
 
             g.switch(stanza_copy)
@@ -1240,7 +1240,7 @@ class XMLStream(object):
                 if handler.check_delete():
                     self.__handlers.remove(handler)
             except:
-                pass  # not thread safe
+                log.error("error", exc_info=True)
             unhandled = False
 
         # Some stanzas require responses, such as Iq queries. A default
