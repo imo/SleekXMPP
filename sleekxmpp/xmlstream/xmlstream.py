@@ -21,40 +21,32 @@ class RestartStream(Exception):
     resending the stream header.
     """
 
-import base64
 import copy
 import logging
 import signal
 import socket as Socket
 import ssl
 import sys
-import threading
-import time
-import random
 import weakref
 import uuid
 
-from xml.parsers.expat import ExpatError
-
-import sleekxmpp
-from sleekxmpp.util import Queue, QueueEmpty
 from sleekxmpp.thirdparty.statemachine import StateMachine
 from sleekxmpp.xmlstream import Scheduler, tostring, cert
-from sleekxmpp.xmlstream.stanzabase import StanzaBase, ET, ElementBase
+from sleekxmpp.xmlstream.stanzabase import StanzaBase, ElementBase
 from sleekxmpp.xmlstream.handler import Waiter, XMLCallback
 from sleekxmpp.xmlstream.matcher import MatchXMLMask
 from sleekxmpp.xmlstream.resolver import resolve, default_resolver
 
-#-----------------------------------------------------------------------------
-#                                IMO IMPORTS
-#-----------------------------------------------------------------------------
-from imop.falcon.SmoothXMPP import XMPPConnection
+from sleekxmpp.xmlstream.asyncconnection import AsyncConnection
 import greenlet
+from xml.etree import cElementTree as ElementTree
+import StringIO
+
 
 # In Python 2.x, file socket objects are broken. A patched socket
 # wrapper is provided for this case in filesocket.py.
 if sys.version_info < (3, 0):
-    from sleekxmpp.xmlstream.filesocket import FileSocket, Socket26
+    from sleekxmpp.xmlstream.filesocket import Socket26
 
 
 #: The time in seconds to wait before timing out waiting for response stanzas.
@@ -93,6 +85,30 @@ RECONNECT_MAX_ATTEMPTS = None
 
 
 log = logging.getLogger(__name__)
+
+
+class XMLParserEventType():
+    START = b"start"
+    END = b"end"
+
+
+class XMLFeeder(ElementTree.iterparse, object):
+
+    def __init__(self, events=None):
+        super(XMLFeeder, self).__init__(StringIO.StringIO(), events)
+
+    def feed(self, data):
+        self._parser.feed(data)
+
+    def next(self):
+        if self._index < len(self._events):
+            item = self._events[self._index]
+            self._index += 1
+            return item
+        else:
+            del self._events[:]
+            self._index = 0
+            raise StopIteration
 
 
 class XMLStream(object):
@@ -356,6 +372,8 @@ class XMLStream(object):
         self.add_event_handler('session_start', self._start_keepalive)
         self.add_event_handler('session_start', self._cert_expiration)
 
+        self.connection_class = AsyncConnection
+
     def use_signals(self, signals=None):
         """Register signal handlers for ``SIGHUP`` and ``SIGTERM``.
 
@@ -472,8 +490,8 @@ class XMLStream(object):
             proto = 'IPv6'
         try:
             sock = self.socket_class(af, Socket.SOCK_STREAM)
-            self.xmpp_connection = XMPPConnection(xmlstream=self,
-                                                  sock=sock)
+            self.xmpp_connection = self.connection_class(xmlstream=self, sock=sock)
+            self.initialize_xml_feeder()
         except Socket.error:
             log.debug("Could not connect using %s", proto)
             return False
@@ -634,7 +652,7 @@ class XMLStream(object):
 
         Meant to be overridden.
         """
-        self.xmpp_connection.configure_socket()
+        self.xmpp_connection.socket.settimeout(None)
 
     def configure_dns(self, resolver, domain=None, port=None):
         """
@@ -1259,6 +1277,56 @@ class XMLStream(object):
 
     def set_socket(self, *args, **kwargs):
         pass
+
+    def initialize_xml_feeder(self):
+        self.xml_feeder = XMLFeeder((XMLParserEventType.START,
+                                     XMLParserEventType.END))
+
+        self.xml_depth = 0
+        self.xml_root = None
+
+    def initialize_stream(self):
+        """
+        Called after <stream> is received from the remote server.
+        TODO: Do the handshakes, maybe?
+        """
+        pass
+
+    def stream_closed(self):
+        """
+        Called after </stream> is received from the remote server.
+        """
+        pass
+
+    def collect_incoming_data(self, data):
+        self.xml_feeder.feed(data)
+
+        for (event, element) in self.xml_feeder:
+            if event == XMLParserEventType.START:
+                if self.xml_depth == 0:
+                    # This happens after we receive the start (the opening) of
+                    # <stream> tag. Handshakes should happen now.
+                    self.xml_root = element
+                    self.initialize_stream()
+
+                self.xml_depth += 1
+            elif event == XMLParserEventType.END:
+                if self.xml_depth == 2:
+                    # If the current depth is 2 and we received an end tag,
+                    # that means the element we just closed is a direct child
+                    # of <stream> and we trigger our processing.
+                    try:
+                        self.process_xml(element)
+                    except RestartStream:
+                        self.initialize_xml_feeder()
+                        self.send_raw(self.stream_header, now=True)
+                        return
+                elif self.xml_depth == 1:
+                    # Since the current depth is 1 and we received an end tag,
+                    # that means we just got </stream>.
+                    self.stream_closed()
+                self.xml_depth -= 1
+                self.xml_root.clear()
 
 # To comply with PEP8, method names now use underscores.
 # Deprecated method names are re-mapped for backwards compatibility.
