@@ -9,7 +9,7 @@
 import logging
 
 from sleekxmpp.stanza import StreamFeatures
-from sleekxmpp.xmlstream import RestartStream, register_stanza_plugin
+from sleekxmpp.xmlstream import register_stanza_plugin
 from sleekxmpp.plugins import BasePlugin
 from sleekxmpp.xmlstream.matcher import MatchXPath
 from sleekxmpp.xmlstream.handler import Callback
@@ -67,4 +67,4 @@ class FeatureSTARTTLS(BasePlugin):
         log.debug("Starting TLS")
         if self.xmpp.start_tls():
             self.xmpp.features.add('starttls')
-            raise RestartStream()
+            self.xmpp.restart_stream()

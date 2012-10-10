@@ -651,7 +651,7 @@ class XMLStream(object):
 
         Meant to be overridden.
         """
-        self.xmpp_connection.socket.settimeout(None)
+        self.xmpp_connection.socket.setblocking(False)
 
     def configure_dns(self, resolver, domain=None, port=None):
         """
@@ -684,7 +684,8 @@ class XMLStream(object):
             else:
                 cert_policy = ssl.CERT_REQUIRED
 
-            ssl_socket = ssl.wrap_socket(self.xmpp_connection.socket,
+            conn = self.xmpp_connection
+            ssl_socket = ssl.wrap_socket(conn.socket,
                                          certfile=self.certfile,
                                          keyfile=self.keyfile,
                                          ssl_version=self.ssl_version,
@@ -692,22 +693,46 @@ class XMLStream(object):
                                          ca_certs=self.ca_certs,
                                          cert_reqs=cert_policy)
 
-            if hasattr(self.xmpp_connection.socket, 'socket'):
-                self.xmpp_connection.socket.socket = ssl_socket
+            ssl_socket.setblocking(False)
+            if hasattr(conn.socket, 'socket'):
+                conn.socket.socket = ssl_socket
             else:
-                self.xmpp_connection.socket = ssl_socket
-            try:
-                self.xmpp_connection.socket.do_handshake()
-            except (Socket.error, ssl.SSLError):
-                log.error('CERT: Invalid certificate trust chain.')
-                if not self.event_handled('ssl_invalid_chain'):
-                    self.disconnect(self.auto_reconnect, send_close=False)
-                else:
-                    self.event('ssl_invalid_chain', direct=True)
-                return False
+                conn.socket = ssl_socket
 
-            self._der_cert = self.xmpp_connection.socket.getpeercert(
-                binary_form=True)
+            current = greenlet.getcurrent()
+
+            def handshake():
+                try:
+                    conn.want_read = False
+                    conn.want_write = False
+                    conn.socket.do_handshake()
+                    current.switch()
+                except ssl.SSLError, err:
+                    if err.args[0] == ssl.SSL_ERROR_WANT_READ:
+                        conn.want_read = True
+                    elif err.args[0] == ssl.SSL_ERROR_WANT_WRITE:
+                        conn.want_write = True
+                    else:
+                        raise
+#            except (Socket.error, ssl.SSLError):
+#                log.error('CERT: Invalid certificate trust chain.')
+#                if not self.event_handled('ssl_invalid_chain'):
+#                    self.disconnect(self.auto_reconnect, send_close=False)
+#                else:
+#                    self.event('ssl_invalid_chain', direct=True)
+#                return False
+
+            conn.handshaking = True
+            conn.handshake = handshake
+            conn.want_read = True
+            conn.want_write = True
+
+            current.parent.switch()
+
+            conn.handshaking = False
+            del conn.handshake
+
+            self._der_cert = conn.socket.getpeercert(binary_form=True)
             pem_cert = ssl.DER_cert_to_PEM_cert(self._der_cert)
             log.debug('CERT: %s', pem_cert)
             self.event('ssl_cert', pem_cert, direct=True)
@@ -1179,7 +1204,7 @@ class XMLStream(object):
         else:
             self.xmpp_connection.push(data)
         """
-        log.info("sending: %s", data)
+        log.info("SENT: %s", data)
         self.xmpp_connection.push(data.encode('utf-8'))
         return True
 
@@ -1244,9 +1269,9 @@ class XMLStream(object):
             else:
                 stanza_copy = stanza
             handler.prerun(stanza_copy)
-            
+
             log.debug("Calling handler: %s", handler)
-            
+
             g = greenlet.greenlet(handler.run)
 
             g.switch(stanza_copy)
@@ -1295,6 +1320,10 @@ class XMLStream(object):
         """
         pass
 
+    def restart_stream(self):
+        self.initialize_xml_feeder()
+        self.send_raw(self.stream_header, now=True)
+
     def collect_incoming_data(self, data):
         self.xml_feeder.feed(data)
 
@@ -1315,8 +1344,7 @@ class XMLStream(object):
                     try:
                         self.process_xml(element)
                     except RestartStream:
-                        self.initialize_xml_feeder()
-                        self.send_raw(self.stream_header, now=True)
+                        self.restart_stream()
                         return
                 elif self.xml_depth == 1:
                     # Since the current depth is 1 and we received an end tag,
