@@ -77,7 +77,7 @@ class Callback(BaseHandler):
         """
 #        if not self._instream or instream:
         try:
-            self._pointer(payload)
+            res = self._pointer(payload)
         except RestartStream:
             raise
         except:
@@ -86,3 +86,4 @@ class Callback(BaseHandler):
         if self._once:
             self._destroy = True
             del self._pointer
+        return res
