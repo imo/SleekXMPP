@@ -52,7 +52,7 @@ class Callback(BaseHandler):
         BaseHandler.__init__(self, name, matcher, stream)
         self._pointer = pointer
         self._once = once
-        self._instream = instream
+#        self._instream = instream
 
     def prerun(self, payload):
         """Execute the callback during stream processing, if
@@ -63,8 +63,8 @@ class Callback(BaseHandler):
         """
         if self._once:
             self._destroy = True
-        if self._instream:
-            self.run(payload, True)
+#        if self._instream:
+#            self.run(payload, True)
 
     def run(self, payload, instream=False):
         """Execute the callback function with the matched stanza payload.
@@ -75,14 +75,14 @@ class Callback(BaseHandler):
                               processing. This should only be used by
                               :meth:`prerun()`. Defaults to ``False``.
         """
-        if not self._instream or instream:
-            try:
-                self._pointer(payload)
-            except RestartStream:
-                raise
-            except:
-                log.error("error", exc_info=True)
-                raise
-            if self._once:
-                self._destroy = True
-                del self._pointer
+#        if not self._instream or instream:
+        try:
+            self._pointer(payload)
+        except RestartStream:
+            raise
+        except:
+            log.error("error", exc_info=True)
+            raise
+        if self._once:
+            self._destroy = True
+            del self._pointer
