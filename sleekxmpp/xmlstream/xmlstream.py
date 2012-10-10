@@ -364,7 +364,6 @@ class XMLStream(object):
         # Added parameteres
         #$ #$ #$
         self.xmpp_connection = None
-        self.event_greenlets = []
         #$ #$ #$
 
         self.add_event_handler('connected', self._handle_xmlstream_connected)
@@ -1010,7 +1009,6 @@ class XMLStream(object):
 
             log.debug("Creating greenlet! %s", handler)
             g = greenlet.greenlet(handler[0])
-            self.event_greenlets.append(g)
 
             g.switch(out_data)
 
@@ -1250,7 +1248,6 @@ class XMLStream(object):
             log.debug("Calling handler: %s", handler)
             
             g = greenlet.greenlet(handler.run)
-            self.event_greenlets.append(g)
 
             g.switch(stanza_copy)
 
