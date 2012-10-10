@@ -9,9 +9,9 @@ import greenlet
 
 from sleekxmpp.stanza.rootstanza import RootStanza
 from sleekxmpp.xmlstream import StanzaBase, ET
-from sleekxmpp.xmlstream.handler import Waiter, Callback
+from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import MatcherId
-from sleekxmpp.exceptions import IqTimeout, IqError
+from sleekxmpp.exceptions import IqError
 
 
 class Iq(RootStanza):
@@ -198,7 +198,8 @@ class Iq(RootStanza):
             current = greenlet.getcurrent()
 
             def cb(response):
-                current.switch(response)
+                greenlet.getcurrent().parent = current
+                return response
 
             handler_name = 'IqCallback_%s' % self['id']
             handler = Callback(handler_name,
