@@ -118,7 +118,7 @@ class PluginManager(object):
         #: Maintain references to active plugins.
         self._plugins = {}
 
-        self._plugin_lock = threading.RLock()
+#        self._plugin_lock = threading.RLock()
 
         #: Globally set default plugin configuration. This will
         #: be used for plugins that are auto-enabled through
@@ -150,25 +150,25 @@ class PluginManager(object):
         if enabled is None:
             enabled = set()
 
-        with self._plugin_lock:
-            if name not in self._enabled:
-                enabled.add(name)
-                self._enabled.add(name)
-                if not self.registered(name):
-                    load_plugin(name)
+#        with self._plugin_lock:
+        if name not in self._enabled:
+            enabled.add(name)
+            self._enabled.add(name)
+            if not self.registered(name):
+                load_plugin(name)
 
-                plugin_class = PLUGIN_REGISTRY.get(name, None)
-                if not plugin_class:
-                    raise PluginNotFound(name)
+            plugin_class = PLUGIN_REGISTRY.get(name, None)
+            if not plugin_class:
+                raise PluginNotFound(name)
 
-                if config is None:
-                    config = self.config.get(name, None)
+            if config is None:
+                config = self.config.get(name, None)
 
-                plugin = plugin_class(self.xmpp, config)
-                self._plugins[name] = plugin
-                for dep in plugin.dependencies:
-                    self.enable(dep, enabled=enabled)
-                plugin._init()
+            plugin = plugin_class(self.xmpp, config)
+            self._plugins[name] = plugin
+            for dep in plugin.dependencies:
+                self.enable(dep, enabled=enabled)
+            plugin._init()
 
         if top_level:
             for name in enabled:
@@ -221,18 +221,18 @@ class PluginManager(object):
         """
         if _disabled is None:
             _disabled = set()
-        with self._plugin_lock:
-            if name not in _disabled and name in self._enabled:
-                _disabled.add(name)
-                plugin = self._plugins.get(name, None)
-                if plugin is None:
-                    raise PluginNotFound(name)
-                for dep in PLUGIN_DEPENDENTS[name]:
-                    self.disable(dep, _disabled)
-                plugin._end()
-                if name in self._enabled:
-                    self._enabled.remove(name)
-                del self._plugins[name]
+#        with self._plugin_lock:
+        if name not in _disabled and name in self._enabled:
+            _disabled.add(name)
+            plugin = self._plugins.get(name, None)
+            if plugin is None:
+                raise PluginNotFound(name)
+            for dep in PLUGIN_DEPENDENTS[name]:
+                self.disable(dep, _disabled)
+            plugin._end()
+            if name in self._enabled:
+                self._enabled.remove(name)
+            del self._plugins[name]
 
     def __keys__(self):
         """Return the set of enabled plugins."""
