@@ -84,7 +84,7 @@ RECONNECT_MAX_DELAY = 600
 #: reconnections. Defaults to ``None``.
 RECONNECT_MAX_ATTEMPTS = None
 
-# (cert, domain) -> (addedtime, verified, pem)
+# domain -> (addedtime, der_cert, verified, pem_cert)
 cert_cache = {}
 # cache entries will expire in 5 min
 CERT_CACHE_EXPIRY = 300
@@ -740,21 +740,21 @@ class XMLStream(object):
 
             self._der_cert = conn.socket.getpeercert(binary_form=True)
 
-            key = (self._der_cert, self._expected_server_name)
+            key = self._expected_server_name
             found = False
-            ver = False
+            verified = False
             if key in cert_cache:
-                ctime, cver, pem_cert = cert_cache[key]
-                if time.time() < ctime + CERT_CACHE_EXPIRY:
+                cache_time, der_cert, cache_verified, pem_cert = cert_cache[key]
+                if time.time() < cache_time + CERT_CACHE_EXPIRY and der_cert == self._der_cert:
                     found = True
-                    ver = cver
-            else:
+                    verified = cache_verified
+            if not found:
                 pem_cert = ssl.DER_cert_to_PEM_cert(self._der_cert)
             log.debug('CERT: %s', pem_cert)
             self.event('ssl_cert', pem_cert, direct=True)
 
             if found:
-                if not ver:
+                if not verified:
                     if not self.event_handled('ssl_invalid_cert'):
                         log.error("Certificate verification failed")
                         self.disconnect(self.auto_reconnect, send_close=False)
@@ -763,9 +763,9 @@ class XMLStream(object):
             else:
                 try:
                     cert.verify(self._expected_server_name, self._der_cert)
-                    cert_cache[key] = (time.time(), True, pem_cert)
+                    cert_cache[key] = (time.time(), self._der_cert, True, pem_cert)
                 except cert.CertificateError as err:
-                    cert_cache[key] = (time.time(), False, pem_cert)
+                    cert_cache[key] = (time.time(), self._der_cert, False, pem_cert)
                     if not self.event_handled('ssl_invalid_cert'):
                         log.error(err.message)
                         self.disconnect(self.auto_reconnect, send_close=False)
