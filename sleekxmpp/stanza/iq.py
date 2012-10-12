@@ -196,16 +196,12 @@ class Iq(RootStanza):
             return handler_name
         elif block and self['type'] in ('get', 'set'):
             current = greenlet.getcurrent()
-
-            def cb(response):
-                greenlet.getcurrent().parent = current
-                return response
-
             handler_name = 'IqCallback_%s' % self['id']
             handler = Callback(handler_name,
                                MatcherId(self['id']),
-                               cb,
-                               once=True)
+                               None,
+                               once=True,
+                               greenlet = current)
             self.stream.register_handler(handler)
             StanzaBase.send(self, now=now)
             result = current.parent.switch()

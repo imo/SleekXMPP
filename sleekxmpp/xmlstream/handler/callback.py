@@ -10,6 +10,7 @@
 """
 
 import logging
+import greenlet
 from sleekxmpp.xmlstream.handler.base import BaseHandler
 from sleekxmpp.xmlstream.xmlstream import RestartStream
 
@@ -48,11 +49,11 @@ class Callback(BaseHandler):
     """
 
     def __init__(self, name, matcher, pointer, thread=False,
-                 once=False, instream=False, stream=None):
+                 once=False, instream=False, stream=None, greenlet=None):
         BaseHandler.__init__(self, name, matcher, stream)
         self._pointer = pointer
         self._once = once
-#        self._instream = instream
+        self._greenlet = greenlet
 
     def prerun(self, payload):
         """Execute the callback during stream processing, if
@@ -63,8 +64,6 @@ class Callback(BaseHandler):
         """
         if self._once:
             self._destroy = True
-#        if self._instream:
-#            self.run(payload, True)
 
     def run(self, payload, instream=False):
         """Execute the callback function with the matched stanza payload.
@@ -75,14 +74,19 @@ class Callback(BaseHandler):
                               processing. This should only be used by
                               :meth:`prerun()`. Defaults to ``False``.
         """
-#        if not self._instream or instream:
-        try:
-            res = self._pointer(payload)
-        except RestartStream:
-            raise
-        except:
-            log.error("error", exc_info=True)
-            raise
+        if self._greenlet:
+            res = payload
+            # after returning, the current greenlet dies
+            # and execution continues in the parent greenlet
+            greenlet.getcurrent().parent = self._greenlet
+        else:
+            try:
+                res = self._pointer(payload)
+            except RestartStream:
+                raise
+            except:
+                log.error("error", exc_info=True)
+                raise
         if self._once:
             self._destroy = True
             del self._pointer
