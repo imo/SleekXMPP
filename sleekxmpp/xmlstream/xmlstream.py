@@ -29,6 +29,7 @@ import ssl
 import sys
 import weakref
 import uuid
+import time
 
 from sleekxmpp.thirdparty.statemachine import StateMachine
 from sleekxmpp.xmlstream import Scheduler, tostring, cert
@@ -82,6 +83,11 @@ RECONNECT_MAX_DELAY = 600
 #: allow infinite reconnection attempts, and using ``0`` will disable
 #: reconnections. Defaults to ``None``.
 RECONNECT_MAX_ATTEMPTS = None
+
+# (cert, domain) -> (addedtime, verified, pem)
+cert_cache = {}
+# cache entries will expire in 5 min
+CERT_CACHE_EXPIRY = 300
 
 
 log = logging.getLogger(__name__)
@@ -369,7 +375,7 @@ class XMLStream(object):
         self.add_event_handler('connected', self._handle_xmlstream_connected)
         self.add_event_handler('disconnected', self._remove_schedules)
         self.add_event_handler('session_start', self._start_keepalive)
-        self.add_event_handler('session_start', self._cert_expiration)
+#        self.add_event_handler('session_start', self._cert_expiration)
 
         self.connection_class = AsyncConnection
 
@@ -528,7 +534,7 @@ class XMLStream(object):
         Add check to ensure that a session is established within
         a reasonable amount of time.
         """
-        print("Handling connected! ")
+        log.debug("Handling connected!")
 
         self.send_raw('<?xml version="1.0" encoding="utf-8" ?>', now=True)
         self.send_raw(self.stream_header, now=True)
@@ -733,18 +739,38 @@ class XMLStream(object):
             del conn.handshake
 
             self._der_cert = conn.socket.getpeercert(binary_form=True)
-            pem_cert = ssl.DER_cert_to_PEM_cert(self._der_cert)
+
+            key = (self._der_cert, self._expected_server_name)
+            found = False
+            ver = False
+            if key in cert_cache:
+                ctime, cver, pem_cert = cert_cache[key]
+                if time.time() < ctime + CERT_CACHE_EXPIRY:
+                    found = True
+                    ver = cver
+            else:
+                pem_cert = ssl.DER_cert_to_PEM_cert(self._der_cert)
             log.debug('CERT: %s', pem_cert)
             self.event('ssl_cert', pem_cert, direct=True)
 
-            try:
-                cert.verify(self._expected_server_name, self._der_cert)
-            except cert.CertificateError as err:
-                if not self.event_handled('ssl_invalid_cert'):
-                    log.error(err.message)
-                    self.disconnect(self.auto_reconnect, send_close=False)
-                else:
-                    self.event('ssl_invalid_cert', pem_cert, direct=True)
+            if found:
+                if not ver:
+                    if not self.event_handled('ssl_invalid_cert'):
+                        log.error("Certificate verification failed")
+                        self.disconnect(self.auto_reconnect, send_close=False)
+                    else:
+                        self.event('ssl_invalid_cert', pem_cert, direct=True)
+            else:
+                try:
+                    cert.verify(self._expected_server_name, self._der_cert)
+                    cert_cache[key] = (time.time(), True, pem_cert)
+                except cert.CertificateError as err:
+                    cert_cache[key] = (time.time(), False, pem_cert)
+                    if not self.event_handled('ssl_invalid_cert'):
+                        log.error(err.message)
+                        self.disconnect(self.auto_reconnect, send_close=False)
+                    else:
+                        self.event('ssl_invalid_cert', pem_cert, direct=True)
 
             return True
         else:
