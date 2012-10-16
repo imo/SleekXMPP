@@ -122,6 +122,8 @@ class Mech(object):
     def process(self, challenge=b''):
         return b''
 
+    def adjust(self, stanza):
+        pass
 
 def choose(mech_list, credentials, security_settings, limit=None, min_mech=None):
     available_mechs = set(MECHANISMS.keys())

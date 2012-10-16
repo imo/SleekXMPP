@@ -181,6 +181,7 @@ class FeatureMechanisms(BasePlugin):
         resp['mechanism'] = self.mech.name
         try:
             resp['value'] = self.mech.process()
+            self.mech.adjust(resp)
         except sasl.SASLCancelled:
             self.attempted_mechs.add(self.mech.name)
             self._send_auth()
