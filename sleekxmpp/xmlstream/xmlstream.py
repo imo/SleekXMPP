@@ -1234,6 +1234,10 @@ class XMLStream(object):
         self.xmpp_connection.push(data.encode('utf-8'))
         return True
 
+    def process(self, **kwargs):
+        # do nothing, the real processing is done in the asyncore loop
+        pass
+
     def _build_stanza(self, xml, default_ns=None):
         """Create a stanza object from a given XML object.
 
