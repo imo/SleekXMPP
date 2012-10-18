@@ -324,7 +324,7 @@ class XMLStream(object):
         #: A :class:`~sleekxmpp.xmlstream.scheduler.Scheduler` instance for
         #: executing callbacks in the future based on time delays.
         #$ TODO: Set another scheduler
-        self.scheduler = Scheduler(self.stop)
+        self.init_scheduler()
         #$self.__failed_send_stanza = None
 
         #: A mapping of XML namespaces to well-known prefixes.
@@ -1074,6 +1074,10 @@ class XMLStream(object):
                 except:
                     log.error("error", exc_info=True)
 
+    def init_scheduler(self):
+        pass
+        #self.scheduler = Scheduler(self.stop)
+
     def schedule(self, name, seconds, callback, args=None,
                  kwargs=None, repeat=False):
         """Schedule a callback function to execute after a given delay.
@@ -1090,6 +1094,10 @@ class XMLStream(object):
         #$ TODO: add scheduuuleeer
         #$self.scheduler.add(name, seconds, callback, args, kwargs,
         #$                   repeat, qpointer=self.event_queue)
+
+    def unschedule(self, name):
+        pass
+        #self.scheduler.remove(name)
 
     def incoming_filter(self, xml):
         """Filter incoming XML objects before they are processed.

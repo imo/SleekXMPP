@@ -118,7 +118,7 @@ class XEP_0199(BasePlugin):
                            repeat=True)
 
     def _handle_session_end(self, event):
-        self.xmpp.scheduler.remove('Ping Keep Alive')
+        self.xmpp.unschedule('Ping Keep Alive')
 
     def _handle_ping(self, iq):
         """
