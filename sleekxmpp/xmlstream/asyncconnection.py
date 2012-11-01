@@ -74,3 +74,7 @@ class AsyncConnection(asynchat.async_chat, object):
                 self.handle_close()
                 return ''
             raise
+
+    def handle_close(self):
+        self.xmlstream.disconnect()
+        super(AsyncConnection, self).handle_close()
