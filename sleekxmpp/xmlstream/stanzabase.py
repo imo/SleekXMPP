@@ -18,7 +18,14 @@ from __future__ import with_statement
 import copy
 import logging
 import weakref
-from xml.etree import cElementTree as ET
+from lxml import etree as ET
+
+orig_element = ET.Element
+
+def wrap_element(tag):
+    return orig_element(tag if tag else '_dummy_tag_')
+
+ET.Element = wrap_element
 
 from sleekxmpp.xmlstream import JID
 from sleekxmpp.xmlstream.tostring import tostring
@@ -1052,9 +1059,9 @@ class ElementBase(object):
             parent_path = "/".join(path[:len(path) - level - 1])
 
             elements = self.xml.findall(element_path)
-            parent = self.xml.find(parent_path)
 
             if elements:
+                parent = self.xml.find(parent_path)
                 if parent is None:
                     parent = self.xml
                 for element in elements:
