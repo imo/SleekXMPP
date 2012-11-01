@@ -390,6 +390,7 @@ class XMLStream(object):
 #        self.add_event_handler('session_start', self._cert_expiration)
 
         self.connection_class = AsyncConnection
+        self.xml_feeder = None
 
     def use_signals(self, signals=None):
         """Register signal handlers for ``SIGHUP`` and ``SIGTERM``.
@@ -1351,6 +1352,8 @@ class XMLStream(object):
         pass
 
     def initialize_xml_feeder(self):
+        if self.xml_feeder is not None:
+            self.xml_feeder.terminate()
         self.xml_feeder = XMLFeeder((XMLParserEventType.START,
                                      XMLParserEventType.END))
 
