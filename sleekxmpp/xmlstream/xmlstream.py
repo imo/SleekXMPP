@@ -40,8 +40,8 @@ from sleekxmpp.xmlstream.resolver import resolve, default_resolver
 
 from sleekxmpp.xmlstream.asyncconnection import AsyncConnection
 import greenlet
-from xml.etree import cElementTree as ElementTree
-import StringIO
+from sleekxmpp.xmlstream import ET as ElementTree
+from collections import deque
 
 
 # In Python 2.x, file socket objects are broken. A patched socket
@@ -98,23 +98,35 @@ class XMLParserEventType():
     END = b"end"
 
 
+class StringQueue(object):
+    def __init__(self, data=None):
+        self.q = deque()
+        self.write(data)
+
+    def write(self, data):
+#        if type(data) != type(""):
+#            raise TypeError, "argument 1 must be string, not %s" % type(data).__name__
+        if data:
+            self.q.append(data)
+
+    def read(self, count):
+        if not self.q:
+            return ''
+        s = self.q.popleft()
+        if len(s) > count:
+            self.q.appendleft(s[count:])
+            return s[:count]
+        return s
+
+
 class XMLFeeder(ElementTree.iterparse, object):
 
     def __init__(self, events=None):
-        super(XMLFeeder, self).__init__(StringIO.StringIO(), events)
+        self._source = StringQueue()
+        super(XMLFeeder, self).__init__(self._source, events, recover=True, cont=True)
 
     def feed(self, data):
-        self._parser.feed(data)
-
-    def next(self):
-        if self._index < len(self._events):
-            item = self._events[self._index]
-            self._index += 1
-            return item
-        else:
-            del self._events[:]
-            self._index = 0
-            raise StopIteration
+        self._source.write(data)
 
 
 class XMLStream(object):
