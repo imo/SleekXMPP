@@ -623,7 +623,12 @@ class XMLStream(object):
 
     def process_xml(self, element):
         log.debug("ELEMENT: %s", element)
-        self.__spawn_event(element)
+        try:
+            self.__spawn_event(element)
+        except RestartStream:
+            raise
+        except:
+            log.error("Error while processing element", exc_info=True)
 
     def _disconnect(self, reconnect=False, wait=None, send_close=True):
         if not reconnect:
