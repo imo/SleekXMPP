@@ -646,6 +646,7 @@ class XMLStream(object):
 
         if not self.auto_reconnect:
             self.stop = True
+            self.stop_schedules()
 
         try:
             #$ TODO: Check this. might not be right
@@ -660,6 +661,7 @@ class XMLStream(object):
     def abort(self):
         self.session_started_event = False
         self.stop = True
+        self.stop_schedules()
         try:
             if self.xmpp_connection.socket is not None:
                 self.xmpp_connection.socket.shutdown(Socket.SHUT_RDWR)
@@ -1116,6 +1118,9 @@ class XMLStream(object):
     def unschedule(self, name):
         pass
         #self.scheduler.remove(name)
+
+    def stop_schedules(self):
+        pass
 
     def incoming_filter(self, xml):
         """Filter incoming XML objects before they are processed.
