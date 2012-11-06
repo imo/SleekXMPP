@@ -665,7 +665,7 @@ class XMLStream(object):
         try:
             if self.xmpp_connection.socket is not None:
                 self.xmpp_connection.socket.shutdown(Socket.SHUT_RDWR)
-            self.xmpp_connection.handle_close()
+            self.xmpp_connection.close()
         except Socket.error:
             pass
         self.state.transition_any(['connected', 'disconnected'],
