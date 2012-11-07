@@ -76,8 +76,9 @@ class PLAIN(Mech):
         return authzid + b'\x00' + authcid + b'\x00' + password
 
     def adjust(self, stanza):
-        stanza._set_attr("xmlns:ga", "http://www.google.com/talk/protocol/auth")
-        stanza._set_attr("ga:client-uses-full-bind-result", "true")
+        gauth_ns = 'http://www.google.com/talk/protocol/auth'
+        stanza.stream.attr_namespace_map[gauth_ns] = 'ga'
+        stanza._set_attr('{%s}client-uses-full-bind-result' % gauth_ns, 'true')
 
 @sasl_mech(100)
 class EXTERNAL(Mech):
