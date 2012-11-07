@@ -96,6 +96,11 @@ def tostring(xml=None, xmlns='', stream=None,
                                                    value))
             elif attrib_ns == XML_NS:
                 output.append(' xml:%s="%s"' % (attrib, value))
+            elif stream and attrib_ns in stream.attr_namespace_map:
+                mapped_ns = stream.attr_namespace_map[attrib_ns]
+                if mapped_ns:
+                    output.append(' xmlns:%s="%s"' % (mapped_ns, attrib_ns))
+                    output.append(' %s:%s="%s"' % (mapped_ns, attrib, value))
 
     if open_only:
         # Only output the opening tag, regardless of content.

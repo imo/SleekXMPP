@@ -341,6 +341,7 @@ class XMLStream(object):
 
         #: A mapping of XML namespaces to well-known prefixes.
         self.namespace_map = {StanzaBase.xml_ns: 'xml'}
+        self.attr_namespace_map = {}
 
         self.__thread = {}
         self.__root_stanza = []
