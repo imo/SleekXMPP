@@ -18,14 +18,7 @@ from __future__ import with_statement
 import copy
 import logging
 import weakref
-from lxml import etree as ET
-
-orig_element = ET.Element
-
-def wrap_element(tag):
-    return orig_element(tag if tag else '_dummy_tag_')
-
-ET.Element = wrap_element
+from xml.etree import ElementTree as ET
 
 from sleekxmpp.xmlstream import JID
 from sleekxmpp.xmlstream.tostring import tostring
