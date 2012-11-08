@@ -891,7 +891,11 @@ class ElementBase(object):
         if value is None or value == '':
             self.__delitem__(name)
         else:
-            self.xml.attrib[name] = value
+            try:
+                self.xml.attrib[name] = value
+            except ValueError:
+                log.error("Invalid attribute: %r = %r" % (name, value))
+                raise
 
     def _del_attr(self, name):
         """Remove a top level attribute of the XML object.
@@ -1061,7 +1065,11 @@ class ElementBase(object):
             elements = self.xml.findall(element_path)
 
             if elements:
-                parent = self.xml.find(parent_path)
+                try:
+                    parent = self.xml.find(parent_path)
+                except:
+                    parent = None
+
                 if parent is None:
                     parent = self.xml
                 for element in elements:
@@ -1490,7 +1498,9 @@ class StanzaBase(ElementBase):
         :param value: A string or :class:`sleekxmpp.xmlstream.JID` object
                representing the recipient's JID.
         """
-        return self._set_attr('to', str(value))
+        if isinstance(value, JID):
+            value = str(value)
+        return self._set_attr('to', value)
 
     def get_from(self):
         """Return the value of the stanza's ``'from'`` attribute."""
