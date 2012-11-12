@@ -18,7 +18,7 @@ from __future__ import with_statement
 import copy
 import logging
 import weakref
-from xml.etree import ElementTree as ET
+from imoxml.etree import cElementTree as ET
 
 from sleekxmpp.xmlstream import JID
 from sleekxmpp.xmlstream.tostring import tostring
