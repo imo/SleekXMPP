@@ -1267,7 +1267,7 @@ class XMLStream(object):
         else:
             self.xmpp_connection.push(data)
         """
-        log.info("SENT: %s", data)
+        log.debug("SENT: %s", data)
         self.xmpp_connection.push(data.encode('utf-8'))
         return True
 
@@ -1323,7 +1323,7 @@ class XMLStream(object):
         if stanza is None:
             return
 
-        log.info("RECV: %s", stanza)
+        log.debug("RECV: %s", stanza)
 
         # Match the stanza against registered handlers. Handlers marked
         # to run "in stream" will be executed immediately; the rest will
