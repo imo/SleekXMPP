@@ -380,6 +380,7 @@ class XMLStream(object):
 
         self.connection_class = AsyncConnection
         self.xml_feeder = None
+        self.waiting_greenlets = set()
 
     def use_signals(self, signals=None):
         """Register signal handlers for ``SIGHUP`` and ``SIGTERM``.
@@ -645,6 +646,13 @@ class XMLStream(object):
             self.event('socket_error', serr, direct=True)
         finally:
             self.event("disconnected", direct=True)
+
+            current = greenlet.getcurrent()
+            for g in self.waiting_greenlets:
+                if g != current:
+                    g.parent = current
+                    g.throw()
+            self.waiting_greenlets.clear()
             return True
 
     def abort(self):
@@ -660,6 +668,13 @@ class XMLStream(object):
         self.state.transition_any(['connected', 'disconnected'],
                                   'disconnected', func=lambda: True)
         self.event("killed", direct=True)
+
+        current = greenlet.getcurrent()
+        for g in self.waiting_greenlets:
+            if g != current:
+                g.parent = current
+                g.throw()
+        self.waiting_greenlets.clear()
 
     def configure_socket(self):
         """Set timeout and other options for self.socket.
@@ -742,7 +757,9 @@ class XMLStream(object):
             conn.want_read = True
             conn.want_write = True
 
+            self.waiting_greenlets.add(current)
             current.parent.switch()
+            self.waiting_greenlets.remove(current)
 
             conn.handshaking = False
             del conn.handshake

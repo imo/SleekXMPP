@@ -204,7 +204,9 @@ class Iq(RootStanza):
                                greenlet = current)
             self.stream.register_handler(handler)
             StanzaBase.send(self, now=now)
+            self.stream.waiting_greenlets.add(current)
             result = current.parent.switch()
+            self.stream.waiting_greenlets.remove(current)
             if result['type'] == 'error':
                 raise IqError(result)
             return result
