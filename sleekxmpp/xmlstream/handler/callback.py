@@ -82,7 +82,7 @@ class Callback(BaseHandler):
         else:
             try:
                 res = self._pointer(payload)
-            except RestartStream:
+            except (RestartStream, greenlet.GreenletExit):
                 raise
             except:
                 log.error("error", exc_info=True)
