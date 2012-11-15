@@ -98,10 +98,9 @@ class XEP_0016(BasePlugin):
                 itype=rule.get('type', None),
                 iq=rule.get('iq', None),
                 message=rule.get('message', None),
-                presence_in=rule.get('presence_in',
-                    rule.get('presence-in', None)),
-                presence_out=rule.get('presence_out',
-                    rule.get('presence-out', None)))
+                presence_in=rule.get('presence_in', None),
+                presence_out=rule.get('presence_out', None))
+        return iq.send(block=block, timeout=timeout, callback=callback)
 
     def remove_list(self, name, block=True, timeout=None, callback=None):
         iq = self.xmpp.Iq()

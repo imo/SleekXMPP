@@ -87,14 +87,14 @@ class Item(ElementBase):
 
     def set_presence_out(self, value):
         keep = True if value else False
-        self._set_sub_text('presence-in', '', keep=keep)
+        self._set_sub_text('presence-out', '', keep=keep)
 
     def get_presence_out(self):
-        pres = self.xml.find('{%s}presence-in' % self.namespace)
+        pres = self.xml.find('{%s}presence-out' % self.namespace)
         return pres is not None
 
     def del_presence_out(self):
-        self._del_sub('{%s}presence-in' % self.namespace)
+        self._del_sub('{%s}presence-out' % self.namespace)
 
 
 register_stanza_plugin(Privacy, Active)
