@@ -10,6 +10,7 @@ import logging
 
 from sleekxmpp.xmlstream import JID
 from sleekxmpp.exceptions import IqError, IqTimeout
+from sleekxmpp import Iq
 
 
 log = logging.getLogger(__name__)
@@ -71,8 +72,9 @@ class StaticCaps(object):
         try:
             info = self.disco.get_info(jid=jid, node=node,
                                        ifrom=ifrom, **data)
-            info = self.disco._wrap(ifrom, jid, info, True)
-            return feature in info['disco_info']['features']
+            if isinstance(info, Iq):
+                info = info['disco_info']
+            return feature in info['features']
         except IqError:
             return False
         except IqTimeout:
