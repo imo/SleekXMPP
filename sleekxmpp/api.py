@@ -1,4 +1,7 @@
 from sleekxmpp.xmlstream import JID
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class APIWrapper(object):
@@ -132,6 +135,7 @@ class APIRegistry(object):
             try:
                 return handler(jid, node, ifrom, args)
             except TypeError:
+                log.warn('handler failed, retrying without ifrom', exc_info=True)
                 # To preserve backward compatibility, drop the ifrom
                 # parameter for existing handlers that don't understand it.
                 return handler(jid, node, args)
