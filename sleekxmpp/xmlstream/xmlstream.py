@@ -1085,9 +1085,9 @@ class XMLStream(object):
             out_data = copy.copy(data) if len(handlers) > 1 else data
 
             log.debug("Creating greenlet! %s", handler)
-            g = greenlet.greenlet(handler[0])
+            g = greenlet.greenlet(self._greenlet_event_wrapper)
 
-            g.switch(out_data)
+            g.switch(handler[0], out_data)
 
             if handler[2]:
                 # If the handler is disposable, we will go ahead and
@@ -1339,9 +1339,9 @@ class XMLStream(object):
 
             log.debug("Calling handler: %s", handler)
 
-            g = greenlet.greenlet(handler.run)
+            g = greenlet.greenlet(self._greenlet_event_wrapper)
 
-            g.switch(stanza_copy)
+            g.switch(handler.run, stanza_copy)
 
             try:
                 if handler.check_delete():
@@ -1354,6 +1354,26 @@ class XMLStream(object):
         # handler will be executed immediately for this case.
         if unhandled:
             stanza.unhandled()
+
+    def _greenlet_event_wrapper(self, func, arg):
+        """Capture exceptions for event handlers that run
+        in individual geenlets.
+
+        :param func: The event handler to execute.
+        :param arg: Argument to the event handler.
+        """
+        # this is always already copied before this is invoked
+        orig = arg
+        try:
+            return func(arg)
+        except (RestartStream, greenlet.GreenletExit):
+            raise
+        except Exception as e:
+            log.warn('Error processing event handler', exc_info=1)
+            if hasattr(orig, 'exception'):
+                orig.exception(e)
+            else:
+                self.exception(e)
 
     def exception(self, exception):
         """Process an unknown exception.

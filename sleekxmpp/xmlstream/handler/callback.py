@@ -12,7 +12,6 @@
 import logging
 import greenlet
 from sleekxmpp.xmlstream.handler.base import BaseHandler
-from sleekxmpp.xmlstream.xmlstream import RestartStream
 
 log = logging.getLogger(__name__)
 
@@ -80,13 +79,7 @@ class Callback(BaseHandler):
             # and execution continues in the parent greenlet
             greenlet.getcurrent().parent = self._greenlet
         else:
-            try:
-                res = self._pointer(payload)
-            except (RestartStream, greenlet.GreenletExit):
-                raise
-            except:
-                log.error("error", exc_info=True)
-                raise
+            res = self._pointer(payload)
         if self._once:
             self._destroy = True
             del self._pointer

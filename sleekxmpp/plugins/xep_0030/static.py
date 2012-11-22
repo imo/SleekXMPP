@@ -204,7 +204,7 @@ class StaticDisco(object):
                 if not node:
                     return DiscoInfo()
                 else:
-                    raise XMPPError(condition='item-not-found', text='node %s not found' % node)
+                    raise XMPPError(condition='item-not-found')
             else:
                 return self.get_node(jid, node)['info']
 
