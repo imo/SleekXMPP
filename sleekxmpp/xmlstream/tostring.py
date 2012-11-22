@@ -25,7 +25,7 @@ XML_NS = 'http://www.w3.org/XML/1998/namespace'
 
 
 def tostring(xml=None, xmlns='', stream=None,
-             outbuffer='', top_level=False, open_only=False):
+             outbuffer='', top_level=False, open_only=False, namespaces=None):
     """Serialize an XML object to a Unicode string.
 
     If an outer xmlns is provided using ``xmlns``, then the current element's
@@ -81,6 +81,7 @@ def tostring(xml=None, xmlns='', stream=None,
     output.append(namespace)
 
     # Output escaped attribute values.
+    new_ns = []
     for attrib, value in xml.attrib.items():
         value = escape(value, use_cdata)
         if '}' not in attrib:
@@ -99,7 +100,12 @@ def tostring(xml=None, xmlns='', stream=None,
             elif stream and attrib_ns in stream.attr_namespace_map:
                 mapped_ns = stream.attr_namespace_map[attrib_ns]
                 if mapped_ns:
-                    output.append(' xmlns:%s="%s"' % (mapped_ns, attrib_ns))
+                    if namespaces is None:
+                        namespaces = set()
+                    if attrib_ns not in namespaces:
+                        namespaces.add(attrib_ns)
+                        new_ns.append(attrib_ns)
+                        output.append(' xmlns:%s="%s"' % (mapped_ns, attrib_ns))
                     output.append(' %s:%s="%s"' % (mapped_ns, attrib, value))
 
     if open_only:
@@ -114,7 +120,7 @@ def tostring(xml=None, xmlns='', stream=None,
             output.append(escape(xml.text, use_cdata))
         if len(xml):
             for child in xml:
-                output.append(tostring(child, tag_xmlns, stream))
+                output.append(tostring(child, tag_xmlns, stream, namespaces=namespaces))
         output.append("</%s>" % tag_name)
     elif xml.text:
         # If we only have text content.
@@ -125,6 +131,8 @@ def tostring(xml=None, xmlns='', stream=None,
     if xml.tail:
         # If there is additional text after the element.
         output.append(escape(xml.tail, use_cdata))
+    for ns in new_ns:
+        namespaces.remove(ns)
     return ''.join(output)
 
 
