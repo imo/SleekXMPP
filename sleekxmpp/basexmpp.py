@@ -700,7 +700,7 @@ class BaseXMPP(XMLStream):
 
             self.address = (host, port)
             self.default_domain = host
-            self.dns_records = None
+            self.dns_answers = None
             self.reconnect_delay = None
             self.reconnect()
 

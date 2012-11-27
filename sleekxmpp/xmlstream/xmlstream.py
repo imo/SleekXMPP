@@ -381,6 +381,7 @@ class XMLStream(object):
         self.connection_class = AsyncConnection
         self.xml_feeder = None
         self.waiting_greenlets = set()
+        self.reconnecting = False
 
     def use_signals(self, signals=None):
         """Register signal handlers for ``SIGHUP`` and ``SIGTERM``.
@@ -675,6 +676,37 @@ class XMLStream(object):
                 g.parent = current
                 g.throw()
         self.waiting_greenlets.clear()
+
+    def reconnect(self, reattempt=True, wait=False, send_close=True):
+        """Reset the stream's state and reconnect to the server."""
+        log.debug("reconnecting...")
+        self.reconnecting = True
+        try:
+            if self.state.ensure('connected'):
+                self.state.transition('connected', 'disconnected',
+                        wait=2.0,
+                        func=self._disconnect,
+                        args=(True, wait, send_close))
+    
+            attempts = self.reconnect_max_attempts
+    
+            log.debug("connecting...")
+            connected = self.state.transition('disconnected', 'connected',
+                                              wait=2.0,
+                                              func=self._connect)
+            while reattempt and not connected and not self.stop:
+                connected = self.state.transition('disconnected', 'connected',
+                                                  wait=2.0, func=self._connect)
+                connected = connected or self.state.ensure('connected')
+                if not connected:
+                    if attempts is not None:
+                        attempts -= 1
+                        if attempts <= 0:
+                            self.event('connection_failed', direct=True)
+                            return False
+            raise RestartStream()
+        finally:
+            self.reconnecting = False
 
     def configure_socket(self):
         """Set timeout and other options for self.socket.
@@ -1431,7 +1463,8 @@ class XMLStream(object):
                     try:
                         self.process_xml(element)
                     except RestartStream:
-                        self.restart_stream()
+                        if self.xml_root is not None:
+                            self.restart_stream()
                         return
                 elif self.xml_depth == 1:
                     # Since the current depth is 1 and we received an end tag,
