@@ -874,14 +874,13 @@ class ElementBase(object):
     def _set_attr(self, name, value):
         """Set the value of a top level attribute of the XML object.
 
-        If the new value is None or an empty string, then the attribute will
-        be removed.
+        If the new value is None then the attribute will be removed.
 
         :param name: The name of the attribute.
         :param value: The new value of the attribute, or None or '' to
                       remove it.
         """
-        if value is None or value == '':
+        if value is None:
             self.__delitem__(name)
         else:
             try:
