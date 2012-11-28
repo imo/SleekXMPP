@@ -40,7 +40,8 @@ class FeatureMechanisms(BasePlugin):
         'unencrypted_digest': False,
         'unencrypted_cram': False,
         'unencrypted_scram': True,
-        'order': 100
+        'order': 100,
+        'keep_trying': True
     }
 
     def plugin_init(self):
@@ -239,5 +240,8 @@ class FeatureMechanisms(BasePlugin):
         self.attempted_mechs.add(self.mech.name)
         log.info("Authentication failed: %s", stanza['condition'])
         self.xmpp.event("failed_auth", stanza, direct=True)
-        self._send_auth()
+        if self.keep_trying:
+            self._send_auth()
+        else:
+            self.xmpp.disconnect()
         return True
