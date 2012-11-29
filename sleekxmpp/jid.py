@@ -32,6 +32,10 @@ ILLEGAL_CHARS = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r' + \
 JID_PATTERN = re.compile(
     "^(?:([^\"&'/:<>@]{1,1023})@)?([^/@]{1,1023})(?:/(.{1,1023}))?$"
 )
+SIMPLE_DOMAIN_LABEL = "[a-zA-Z][a-zA-Z0-9]*(?:-[a-zA-Z0-9]+)*"
+SIMPLE_DOMAIN = SIMPLE_DOMAIN_LABEL + "(?:\\." + SIMPLE_DOMAIN_LABEL + ")*"
+SIMPLE_JID_PATTERN = re.compile("^(?:([a-zA-Z0-9_.-]{1,1023})@)?(" + 
+                                SIMPLE_DOMAIN + ")(?:/([ -~]{1,1023}))?$")
 
 #: The set of escape sequences for the characters not allowed by nodeprep.
 JID_ESCAPE_SEQUENCES = set(['\\20', '\\22', '\\26', '\\27', '\\2f',
@@ -120,15 +124,26 @@ def _parse_jid(data):
 
     :returns: tuple of the validated local, domain, and resource strings
     """
-    match = JID_PATTERN.match(data)
+    # process most common jids efficiently
+    match = SIMPLE_JID_PATTERN.match(data)
+    if match:
+        (node, domain, resource) = match.groups()
+        if len(domain) < 64:
+            # actually domain labels have this limit,
+            # but it should catch most domains anyway
+            if node is not None:
+                node = node.lower()
+            return node, domain.lower(), resource
+
+    match = JID_PATTERN.match(unicode(data))
     if not match:
         raise InvalidJID('JID could not be parsed')
 
     (node, domain, resource) = match.groups()
 
-#    node = _validate_node(node)
-#    domain = _validate_domain(domain)
-#    resource = _validate_resource(resource)
+    node = _validate_node(node)
+    domain = _validate_domain(domain)
+    resource = _validate_resource(resource)
 
     return node, domain, resource
 
