@@ -6,10 +6,13 @@
     See the file LICENSE for copying permission.
 """
 
+import logging
+
 from sleekxmpp.stanza import Iq
 from sleekxmpp.xmlstream import JID
 from sleekxmpp.xmlstream import ET, ElementBase, register_stanza_plugin
 
+log = logging.getLogger(__name__)
 
 class Roster(ElementBase):
 
@@ -98,7 +101,12 @@ class Roster(ElementBase):
         items = {}
         for item in self['substanzas']:
             if isinstance(item, RosterItem):
-                items[item['jid']] = item.values
+                try:
+                    values = item.values
+                except:
+                    log.warning('Error in roster item %s, skipping', item, show_exc=1)
+                    continue
+                items[item['jid']] = values
                 # Remove extra JID reference to keep everything
                 # backward compatible
                 del items[item['jid']]['jid']
