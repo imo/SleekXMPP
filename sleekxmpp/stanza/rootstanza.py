@@ -54,7 +54,7 @@ class RootStanza(StanzaBase):
                 self['error']['type'] = 'cancel'
                 self.send()
             except:
-                log.warning('Failed to reply with error stanza', show_exc=1)
+                log.warning('Failed to reply with error stanza', exc_info=1)
         elif isinstance(e, IqTimeout):
             log.warning('You should catch IqTimeout exceptions')
             try:
@@ -63,7 +63,7 @@ class RootStanza(StanzaBase):
                 self['error']['type'] = 'wait'
                 self.send()
             except:
-                log.warning('Failed to reply with error stanza', show_exc=1)
+                log.warning('Failed to reply with error stanza', exc_info=1)
         elif isinstance(e, XMPPError):
             try:
                 # We raised this deliberately
@@ -78,7 +78,7 @@ class RootStanza(StanzaBase):
                     self['error'].append(extxml)
                 self.send()
             except:
-                log.warning('Failed to reply with error stanza', show_exc=1)
+                log.warning('Failed to reply with error stanza', exc_info=1)
         else:
             # log the error
             log.exception('Error handling {%s}%s stanza',
@@ -91,7 +91,7 @@ class RootStanza(StanzaBase):
                 self['error']['type'] = 'cancel'
                 self.send()
             except:
-                log.warning('Failed to reply with error stanza', show_exc=1)
+                log.warning('Failed to reply with error stanza', exc_info=1)
             # Finally raise the exception to a global exception handler
             self.stream.exception(e)
 
