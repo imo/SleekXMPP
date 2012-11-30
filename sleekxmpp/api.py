@@ -109,9 +109,6 @@ class APIRegistry(object):
         elif jid == JID(''):
             jid = self.xmpp.boundjid
 
-        if node is None:
-            node = ''
-
         if self.xmpp.is_component:
             if self.settings[ctype].get('component_bare', False):
                 jid = jid.bare

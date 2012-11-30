@@ -114,7 +114,7 @@ class Presence(RootStanza):
         if value in self.types:
             self['show'] = None
             if value == 'available':
-                value = ''
+                value = None
             self._set_attr('type', value)
         elif value in self.showtypes:
             self['show'] = value

@@ -357,10 +357,10 @@ class XEP_0030(BasePlugin):
 
         iq = self.xmpp.Iq()
         # Check dfrom parameter for backwards compatibility
-        iq['from'] = kwargs.get('ifrom', kwargs.get('dfrom', ''))
+        iq['from'] = kwargs.get('ifrom', kwargs.get('dfrom', None))
         iq['to'] = jid
         iq['type'] = 'get'
-        iq['disco_info']['node'] = node if node else ''
+        iq['disco_info']['node'] = node if node else None
         return iq.send(timeout=kwargs.get('timeout', None),
                        block=kwargs.get('block', True),
                        callback=kwargs.get('callback', None))

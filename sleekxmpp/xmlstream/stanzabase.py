@@ -897,11 +897,11 @@ class ElementBase(object):
         if name in self.xml.attrib:
             del self.xml.attrib[name]
 
-    def _get_attr(self, name, default=''):
+    def _get_attr(self, name, default=None):
         """Return the value of a top level attribute of the XML object.
 
         In case the attribute has not been set, a default value can be
-        returned instead. An empty string is returned if no other default
+        returned instead. None is returned if no other default
         is supplied.
 
         :param name: The name of the attribute.

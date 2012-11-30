@@ -76,7 +76,7 @@ class Iq(RootStanza):
         Overrides StanzaBase.__init__.
         """
         StanzaBase.__init__(self, *args, **kwargs)
-        if self['id'] == '':
+        if self['id'] is None:
             if self.stream is not None:
                 self['id'] = self.stream.new_id()
             else:

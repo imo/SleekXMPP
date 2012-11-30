@@ -62,8 +62,6 @@ class StaticDisco(object):
         with self.lock:
             if jid is None:
                 jid = self.xmpp.boundjid.full
-            if node is None:
-                node = ''
             if ifrom is None:
                 ifrom = ''
             if isinstance(ifrom, JID):
@@ -78,8 +76,6 @@ class StaticDisco(object):
         with self.lock:
             if jid is None:
                 jid = self.xmpp.boundjid.full
-            if node is None:
-                node = ''
             if ifrom is None:
                 ifrom = ''
             if isinstance(ifrom, JID):
@@ -92,8 +88,6 @@ class StaticDisco(object):
         with self.lock:
             if jid is None:
                 jid = self.xmpp.boundjid.full
-            if node is None:
-                node = ''
             if ifrom is None:
                 ifrom = ''
             if isinstance(ifrom, JID):
