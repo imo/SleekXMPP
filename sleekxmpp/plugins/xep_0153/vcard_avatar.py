@@ -9,6 +9,7 @@
 import hashlib
 import logging
 import threading
+import time
 
 from sleekxmpp import JID
 from sleekxmpp.stanza import Presence
@@ -18,6 +19,7 @@ from sleekxmpp.xmlstream.matcher import StanzaPath
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.plugins.base import BasePlugin
 from sleekxmpp.plugins.xep_0153 import stanza, VCardTempUpdate
+import greenlet
 
 
 log = logging.getLogger(__name__)
@@ -29,6 +31,7 @@ class XEP_0153(BasePlugin):
     description = 'XEP-0153: vCard-Based Avatars'
     dependencies = set(['xep_0054'])
     stanza = stanza
+    default_config = {'defer_updates': False, 'update_interval': 3, 'delay': 1}
 
     def plugin_init(self):
         self._hashes = {}
@@ -80,9 +83,16 @@ class XEP_0153(BasePlugin):
     def _start(self, event):
         vcard = self.xmpp['xep_0054'].get_vcard()
         self._allow_advertising.set()
+        if self.defer_updates:
+            # bare jid -> (timestamp, presence stanza)
+            self._presences = {}
+            self.xmpp.schedule('Avatar update', self.update_interval,
+                               self._update_avatars, repeat=True)
 
     def _end(self, event):
         self._allow_advertising.clear()
+        if self.defer_updates:
+            self.xmpp.unschedule('Avatar update')
 
     def _update_presence(self, stanza):
         if not isinstance(stanza, Presence):
@@ -117,7 +127,11 @@ class XEP_0153(BasePlugin):
         except XMPPError:
             log.debug('Could not retrieve vCard for %s' % jid)
 
-    def _recv_presence(self, pres):
+    def _recv_presence(self, pres, force=False):
+        if not force and self.defer_updates:
+            self._presences[pres['from'].bare] = (time.time(), pres)
+            return
+
         if not pres.match('presence/vcard_temp_update'):
             self.api['set_hash'](pres['from'], args=None)
             return
@@ -125,10 +139,21 @@ class XEP_0153(BasePlugin):
         data = pres['vcard_temp_update']['photo']
         if data is None:
             return
-        elif data == '' or data != self.api['get_hash'](pres['to']):
+        elif data == '' or data != self.api['get_hash'](pres['from']):
             ifrom = pres['to'] if self.xmpp.is_component else None
             self.api['reset_hash'](pres['from'], ifrom=ifrom)
             self.xmpp.event('vcard_avatar_update', pres)
+
+    def _update_avatars(self):
+        now = time.time()
+        for jid in self._presences.keys():
+            if jid in self._presences:
+                t, pres = self._presences[jid]
+                if now > t + self.delay:
+                    log.info("updating avatar for %s", jid)
+                    del self._presences[jid]
+                    g = greenlet.greenlet(self._recv_presence)
+                    g.switch(pres, True)
 
     # =================================================================
 
