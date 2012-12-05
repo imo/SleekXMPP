@@ -11,12 +11,9 @@ import logging
 import threading
 import time
 
-from sleekxmpp import JID
 from sleekxmpp.stanza import Presence
 from sleekxmpp.exceptions import XMPPError
 from sleekxmpp.xmlstream import register_stanza_plugin
-from sleekxmpp.xmlstream.matcher import StanzaPath
-from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.plugins.base import BasePlugin
 from sleekxmpp.plugins.xep_0153 import stanza, VCardTempUpdate
 import greenlet
@@ -150,7 +147,6 @@ class XEP_0153(BasePlugin):
             if jid in self._presences:
                 t, pres = self._presences[jid]
                 if now > t + self.delay:
-                    log.info("updating avatar for %s", jid)
                     del self._presences[jid]
                     g = greenlet.greenlet(self._recv_presence)
                     g.switch(pres, True)
