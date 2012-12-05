@@ -1401,12 +1401,12 @@ class ElementBase(object):
         :param bool top_level_ns: Display the top-most namespace.
                                   Defaults to True.
         """
-        return repr(tostring(self.xml, xmlns='',
-                        top_level=True))
+        return tostring(self.xml, xmlns='',
+                        top_level=True)
 
     def __repr__(self):
         """Use the stanza's serialized XML as its representation."""
-        return self.__str__()
+        return repr(self.__str__())
 
 
 class StanzaBase(ElementBase):
@@ -1594,9 +1594,9 @@ class StanzaBase(ElementBase):
                                   Defaults to ``False``.
         """
         xmlns = self.stream.default_ns if self.stream else ''
-        return repr(tostring(self.xml, xmlns=xmlns,
+        return tostring(self.xml, xmlns=xmlns,
                         stream=self.stream,
-                        top_level=(self.stream is None)))
+                        top_level=(self.stream is None))
 
 
 #: A JSON/dictionary version of the XML content exposed through

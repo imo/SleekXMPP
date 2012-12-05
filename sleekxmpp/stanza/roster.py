@@ -104,7 +104,7 @@ class Roster(ElementBase):
                 try:
                     values = item.values
                 except:
-                    log.warning('Error in roster item %s, skipping', item, exc_info=1)
+                    log.warning('Skipping invalid roster item %r', item, exc_info=1)
                     continue
                 items[item['jid']] = values
                 # Remove extra JID reference to keep everything
