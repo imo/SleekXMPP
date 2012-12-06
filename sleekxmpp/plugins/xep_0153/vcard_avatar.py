@@ -78,13 +78,13 @@ class XEP_0153(BasePlugin):
         self.xmpp.roster[jid].send_last_presence()
 
     def _start(self, event):
-        vcard = self.xmpp['xep_0054'].get_vcard()
-        self._allow_advertising.set()
         if self.defer_updates:
             # bare jid -> (timestamp, presence stanza)
             self._presences = {}
             self.xmpp.schedule('Avatar update', self.update_interval,
                                self._update_avatars, repeat=True)
+        self.xmpp['xep_0054'].get_vcard(ifrom=self.xmpp.boundjid)
+        self._allow_advertising.set()
 
     def _end(self, event):
         self._allow_advertising.clear()
