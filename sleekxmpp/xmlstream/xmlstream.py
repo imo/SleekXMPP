@@ -635,7 +635,7 @@ class XMLStream(object):
 
         self.stream_end_event = True
 
-        if not self.auto_reconnect:
+        if not self.auto_reconnect and not self.reconnecting:
             self.stop = True
             self.stop_schedules()
 
