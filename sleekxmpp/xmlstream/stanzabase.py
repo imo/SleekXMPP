@@ -1492,7 +1492,7 @@ class StanzaBase(ElementBase):
         """
         if isinstance(value, JID):
             value = str(value)
-        return self._set_attr('to', value)
+        return self._set_attr('to', value or None)
 
     def get_from(self):
         """Return the value of the stanza's ``'from'`` attribute."""
@@ -1504,7 +1504,9 @@ class StanzaBase(ElementBase):
         Arguments:
             from -- A string or JID object representing the sender's JID.
         """
-        return self._set_attr('from', str(value))
+        if isinstance(value, JID):
+            value = str(value)
+        return self._set_attr('from', value or None)
 
     def get_payload(self):
         """Return a list of XML objects contained in the stanza."""
