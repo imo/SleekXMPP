@@ -1,4 +1,4 @@
-*.pyc
+*.py[co]
 build/
 dist/
 MANIFEST
@@ -8,6 +8,9 @@ docs/_build/
 .coverage
 sleekxmpp.egg-info/
 .ropeproject/
+4913
+*~
+.baboon/
 .project
 .pydevproject
 .settings/

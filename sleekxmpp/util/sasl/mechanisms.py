@@ -471,7 +471,8 @@ class DIGEST(Mech):
             'qop': self.qop,
             'digest-uri': quote(self.digest_uri()),
             'response': self.response(b'AUTHENTICATE'),
-            'maxbuf': self.maxbuf
+            'maxbuf': self.maxbuf,
+            'charset': 'utf-8'
         }
         resp = b''
         for key, value in data.items():
@@ -484,7 +485,7 @@ class DIGEST(Mech):
             if self.cnonce and self.nonce and self.nonce_count and self.qop:
                 self.nonce_count += 1
                 return self.respond()
-            return b''
+            return None
 
         data = self.parse(challenge)
         if 'rspauth' in data:
