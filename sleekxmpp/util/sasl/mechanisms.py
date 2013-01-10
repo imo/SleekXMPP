@@ -21,7 +21,8 @@ from base64 import b64encode, b64decode
 
 from sleekxmpp.util import bytes, hash, XOR, quote, num_to_bytes
 from sleekxmpp.util.sasl.client import sasl_mech, Mech, \
-                                       SASLCancelled, SASLFailed
+                                       SASLCancelled, SASLFailed, \
+                                       SASLMutualAuthFailed
 
 
 @sasl_mech(0)
@@ -90,7 +91,7 @@ class EXTERNAL(Mech):
         return self.credentials['authzid']
 
 
-@sasl_mech(30)
+@sasl_mech(31)
 class X_FACEBOOK_PLATFORM(Mech):
 
     name = 'X-FACEBOOK-PLATFORM'

@@ -79,7 +79,7 @@ def _cache(key, parts, locked):
         with JID_CACHE_LOCK:
             while len(JID_CACHE) > JID_CACHE_MAX_SIZE:
                 found = None
-                for key, item in JID_CACHE.iteritems():
+                for key, item in JID_CACHE.items():
                     if not item[1]: # if not locked
                         found = key
                         break
@@ -217,7 +217,7 @@ def _validate_domain(domain):
             socket.inet_pton(socket.AF_INET6, domain.strip('[]'))
             domain = '[%s]' % domain.strip('[]')
             ip_addr = True
-        except socket.error:
+        except (socket.error, ValueError):
             pass
 
     if not ip_addr:
