@@ -373,7 +373,7 @@ class XMLStream(object):
         self.xmpp_connection = None
         #$ #$ #$
 
-        self.add_event_handler('connected', self._handle_xmlstream_connected)
+        self.add_event_handler('connected', self._session_timeout_check)
         self.add_event_handler('disconnected', self._remove_schedules)
         self.add_event_handler('session_start', self._start_keepalive)
 #        self.add_event_handler('session_start', self._cert_expiration)
@@ -533,7 +533,7 @@ class XMLStream(object):
         self.xmpp_connection.connect(self.address)
         return True
 
-    def _handle_xmlstream_connected(self, event=None):
+    def _session_timeout_check(self, event=None):
         """
         Add check to ensure that a session is established within
         a reasonable amount of time.
