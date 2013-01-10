@@ -213,6 +213,10 @@ class BaseXMPP(XMLStream):
         self.stream_version = xml.get('version', '')
         self.peer_default_lang = xml.get('{%s}lang' % XML_NS, None)
 
+        if not self.is_component and not self.stream_version:
+            log.warning('Legacy XMPP 0.9 protocol detected.')
+            self.event('legacy_protocol')
+
     def process(self, *args, **kwargs):
         """Initialize plugins and begin processing the XML stream.
 
@@ -743,6 +747,8 @@ class BaseXMPP(XMLStream):
         item = self.roster[pres['to']][pres['from']]
         if item['whitelisted']:
             item.authorize()
+            if roster.auto_subscribe:
+                item.subscribe()
         elif roster.auto_authorize:
             item.authorize()
             if roster.auto_subscribe:

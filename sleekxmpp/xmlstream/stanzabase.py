@@ -663,7 +663,7 @@ class ElementBase(object):
         full_attrib = attrib
         attrib_lang = ('%s|' % attrib).split('|')
         attrib = attrib_lang[0]
-        lang = attrib_lang[1] or ''
+        lang = attrib_lang[1] or None
 
         kwargs = {}
         if lang and attrib in self.lang_interfaces:
@@ -739,7 +739,7 @@ class ElementBase(object):
         full_attrib = attrib
         attrib_lang = ('%s|' % attrib).split('|')
         attrib = attrib_lang[0]
-        lang = attrib_lang[1] or ''
+        lang = attrib_lang[1] or None
 
         kwargs = {}
         if lang and attrib in self.lang_interfaces:
@@ -825,7 +825,7 @@ class ElementBase(object):
         full_attrib = attrib
         attrib_lang = ('%s|' % attrib).split('|')
         attrib = attrib_lang[0]
-        lang = attrib_lang[1] or ''
+        lang = attrib_lang[1] or None
 
         kwargs = {}
         if lang and attrib in self.lang_interfaces:
@@ -863,7 +863,7 @@ class ElementBase(object):
                 del plugin[full_attrib]
                 del self.plugins[(attrib, None)]
             else:
-                del self.plugins[(attrib, lang)]
+                del self.plugins[(attrib, plugin['lang'])]
             self.loaded_plugins.remove(attrib)
             try:
                 self.xml.remove(plugin.xml)

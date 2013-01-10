@@ -64,9 +64,6 @@ WAIT_TIMEOUT = 0.1
 #: a GIL increasing this value can provide better performance.
 HANDLER_THREADS = 1
 
-#: Flag indicating if the SSL library is available for use.
-SSL_SUPPORT = True
-
 #: The time in seconds to delay between attempts to resend data
 #: after an SSL error.
 SSL_RETRY_DELAY = 0.5
@@ -145,9 +142,6 @@ class XMLStream(object):
     """
 
     def __init__(self, socket=None, host='', port=0):
-        #: Flag indicating if the SSL library is available for use.
-        self.ssl_support = SSL_SUPPORT
-
         #: Most XMPP servers support TLSv1, but OpenFire in particular
         #: does not work well with it. For OpenFire, set
         #: :attr:`ssl_version` to use ``SSLv23``::
@@ -507,7 +501,7 @@ class XMLStream(object):
 
         self.configure_socket()
 
-        if self.use_ssl and self.ssl_support:
+        if self.use_ssl:
             log.debug("Socket Wrapped for SSL")
             if self.ca_certs is None:
                 cert_policy = ssl.CERT_NONE
@@ -543,7 +537,7 @@ class XMLStream(object):
         self.send_raw('<?xml version="1.0" encoding="utf-8" ?>', now=True)
         self.send_raw(self.stream_header, now=True)
 
-        if self.use_ssl and self.ssl_support:
+        if self.use_ssl:
             try:
                 self.xmpp_connection.socket.do_handshake()
             except (Socket.error, ssl.SSLError):
@@ -738,44 +732,43 @@ class XMLStream(object):
         If the handshake is successful, the XML stream will need
         to be restarted.
         """
-        if self.ssl_support:
-            log.info("Negotiating TLS")
-            log.info("Using SSL version: %s", str(self.ssl_version))
-            if self.ca_certs is None:
-                cert_policy = ssl.CERT_NONE
-            else:
-                cert_policy = ssl.CERT_REQUIRED
+        log.info("Negotiating TLS")
+        log.info("Using SSL version: %s", str(self.ssl_version))
+        if self.ca_certs is None:
+            cert_policy = ssl.CERT_NONE
+        else:
+            cert_policy = ssl.CERT_REQUIRED
 
-            conn = self.xmpp_connection
-            ssl_socket = ssl.wrap_socket(conn.socket,
-                                         certfile=self.certfile,
-                                         keyfile=self.keyfile,
-                                         ssl_version=self.ssl_version,
-                                         do_handshake_on_connect=False,
-                                         ca_certs=self.ca_certs,
-                                         cert_reqs=cert_policy)
+        conn = self.xmpp_connection
+        ssl_socket = ssl.wrap_socket(conn.socket,
+                                     certfile=self.certfile,
+                                     keyfile=self.keyfile,
+                                     ssl_version=self.ssl_version,
+                                     do_handshake_on_connect=False,
+                                     ca_certs=self.ca_certs,
+                                     cert_reqs=cert_policy)
 
-            ssl_socket.setblocking(False)
-            if hasattr(conn.socket, 'socket'):
-                conn.socket.socket = ssl_socket
-            else:
-                conn.socket = ssl_socket
+        ssl_socket.setblocking(False)
+        if hasattr(conn.socket, 'socket'):
+            conn.socket.socket = ssl_socket
+        else:
+            conn.socket = ssl_socket
 
-            current = greenlet.getcurrent()
+        current = greenlet.getcurrent()
 
-            def handshake():
-                try:
-                    conn.want_read = False
-                    conn.want_write = False
-                    conn.socket.do_handshake()
-                    current.switch()
-                except ssl.SSLError, err:
-                    if err.args[0] == ssl.SSL_ERROR_WANT_READ:
-                        conn.want_read = True
-                    elif err.args[0] == ssl.SSL_ERROR_WANT_WRITE:
-                        conn.want_write = True
-                    else:
-                        raise
+        def handshake():
+            try:
+                conn.want_read = False
+                conn.want_write = False
+                conn.socket.do_handshake()
+                current.switch()
+            except ssl.SSLError, err:
+                if err.args[0] == ssl.SSL_ERROR_WANT_READ:
+                    conn.want_read = True
+                elif err.args[0] == ssl.SSL_ERROR_WANT_WRITE:
+                    conn.want_write = True
+                else:
+                    raise
 #            except (Socket.error, ssl.SSLError):
 #                log.error('CERT: Invalid certificate trust chain.')
 #                if not self.event_handled('ssl_invalid_chain'):
@@ -784,56 +777,53 @@ class XMLStream(object):
 #                    self.event('ssl_invalid_chain', direct=True)
 #                return False
 
-            conn.handshaking = True
-            conn.handshake = handshake
-            conn.want_read = True
-            conn.want_write = True
+        conn.handshaking = True
+        conn.handshake = handshake
+        conn.want_read = True
+        conn.want_write = True
 
-            self.waiting_greenlets.add(current)
-            current.parent.switch()
-            self.waiting_greenlets.remove(current)
+        self.waiting_greenlets.add(current)
+        current.parent.switch()
+        self.waiting_greenlets.remove(current)
 
-            conn.handshaking = False
-            del conn.handshake
+        conn.handshaking = False
+        del conn.handshake
 
-            self._der_cert = conn.socket.getpeercert(binary_form=True)
+        self._der_cert = conn.socket.getpeercert(binary_form=True)
 
-            key = self._expected_server_name
-            found = False
-            verified = False
-            if key in cert_cache:
-                cache_time, der_cert, cache_verified, pem_cert = cert_cache[key]
-                if time.time() < cache_time + CERT_CACHE_EXPIRY and der_cert == self._der_cert:
-                    found = True
-                    verified = cache_verified
-            if not found:
-                pem_cert = ssl.DER_cert_to_PEM_cert(self._der_cert)
-            log.debug('CERT: %s', pem_cert)
-            self.event('ssl_cert', pem_cert, direct=True)
+        key = self._expected_server_name
+        found = False
+        verified = False
+        if key in cert_cache:
+            cache_time, der_cert, cache_verified, pem_cert = cert_cache[key]
+            if time.time() < cache_time + CERT_CACHE_EXPIRY and der_cert == self._der_cert:
+                found = True
+                verified = cache_verified
+        if not found:
+            pem_cert = ssl.DER_cert_to_PEM_cert(self._der_cert)
+        log.debug('CERT: %s', pem_cert)
+        self.event('ssl_cert', pem_cert, direct=True)
 
-            if found:
-                if not verified:
-                    if not self.event_handled('ssl_invalid_cert'):
-                        log.error("Certificate verification failed")
-                        self.disconnect(self.auto_reconnect, send_close=False)
-                    else:
-                        self.event('ssl_invalid_cert', pem_cert, direct=True)
-            else:
-                try:
-                    cert.verify(self._expected_server_name, self._der_cert)
-                    cert_cache[key] = (time.time(), self._der_cert, True, pem_cert)
-                except cert.CertificateError as err:
-                    cert_cache[key] = (time.time(), self._der_cert, False, pem_cert)
-                    if not self.event_handled('ssl_invalid_cert'):
-                        log.error(err.message)
-                        self.disconnect(self.auto_reconnect, send_close=False)
-                    else:
-                        self.event('ssl_invalid_cert', pem_cert, direct=True)
-
-            return True
+        if found:
+            if not verified:
+                if not self.event_handled('ssl_invalid_cert'):
+                    log.error("Certificate verification failed")
+                    self.disconnect(self.auto_reconnect, send_close=False)
+                else:
+                    self.event('ssl_invalid_cert', pem_cert, direct=True)
         else:
-            log.warning("Tried to enable TLS, but ssl module not found.")
-            return False
+            try:
+                cert.verify(self._expected_server_name, self._der_cert)
+                cert_cache[key] = (time.time(), self._der_cert, True, pem_cert)
+            except cert.CertificateError as err:
+                cert_cache[key] = (time.time(), self._der_cert, False, pem_cert)
+                if not self.event_handled('ssl_invalid_cert'):
+                    log.error(err.message)
+                    self.disconnect(self.auto_reconnect, send_close=False)
+                else:
+                    self.event('ssl_invalid_cert', pem_cert, direct=True)
+
+        return True
 
     def _cert_expiration(self, event):
         """Schedule an event for when the TLS certificate expires."""
