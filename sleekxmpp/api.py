@@ -1,7 +1,4 @@
 from sleekxmpp.xmlstream import JID
-import logging
-
-log = logging.getLogger(__name__)
 
 
 class APIWrapper(object):
