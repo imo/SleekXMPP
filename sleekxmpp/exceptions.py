@@ -57,7 +57,7 @@ class XMPPError(Exception):
         self.extension_args = extension_args
 
     def __str__(self):
-        return self.text
+        return self.text or ''
 
 
 class IqTimeout(XMPPError):
