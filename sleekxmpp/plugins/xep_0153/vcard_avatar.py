@@ -84,7 +84,7 @@ class XEP_0153(BasePlugin):
             self.xmpp.schedule('Avatar update', self.update_interval,
                                self._update_avatars, repeat=True)
         try:
-            vcard = self.xmpp['xep_0054'].get_vcard()
+            vcard = self.xmpp['xep_0054'].get_vcard(self.xmpp.boundjid.bare)
             data = vcard['vcard_temp']['PHOTO']['BINVAL']
             if not data:
                 new_hash = ''
