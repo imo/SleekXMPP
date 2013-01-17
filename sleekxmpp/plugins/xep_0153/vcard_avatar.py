@@ -84,10 +84,17 @@ class XEP_0153(BasePlugin):
             self.xmpp.schedule('Avatar update', self.update_interval,
                                self._update_avatars, repeat=True)
         try:
-            self.xmpp['xep_0054'].get_vcard()
-            self._allow_advertising.set()
-        except Exception as e:
-            log.warning('Error fetching own vcard: %s', e)
+            vcard = self.xmpp['xep_0054'].get_vcard()
+            data = vcard['vcard_temp']['PHOTO']['BINVAL']
+            if not data:
+                new_hash = ''
+            else:
+                new_hash = hashlib.sha1(data).hexdigest()
+            self.api['set_hash'](self.xmpp.boundjid, args=new_hash)
+        except XMPPError:
+            log.debug('Could not retrieve vCard for %s' % self.xmpp.boundjid.bare)
+
+        self._allow_advertising.set()
 
     def _end(self, event):
         self._allow_advertising.clear()
