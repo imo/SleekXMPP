@@ -84,3 +84,14 @@ class Callback(BaseHandler):
             self._destroy = True
             del self._pointer
         return res
+
+    def __str__(self):
+        try:
+            if self._pointer:
+                return 'Callback: ' + str(self._pointer)
+            elif self._greenlet:
+                return 'Greenlet callback'
+            else:
+                return 'Unknown callback'
+        except:
+            return 'Used one-time callback'
