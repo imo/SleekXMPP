@@ -108,7 +108,7 @@ class XEP_0153(BasePlugin):
         if stanza['type'] not in ('available', 'dnd', 'chat', 'away', 'xa'):
             return stanza
 
-        current_hash = self.api['get_hash'](stanza['from'])
+        current_hash = self.api['get_hash'](self.xmpp.boundjid)
         stanza['vcard_temp_update']['photo'] = current_hash
         return stanza
 
@@ -135,6 +135,10 @@ class XEP_0153(BasePlugin):
             log.debug('Could not retrieve vCard for %s' % jid)
 
     def _recv_presence(self, pres, force=False):
+        if pres['muc']['affiliation']:
+            # no avatar updates for muc
+            return
+
         if not force and self.defer_updates:
             self._presences[pres['from'].bare] = (time.time(), pres)
             return
