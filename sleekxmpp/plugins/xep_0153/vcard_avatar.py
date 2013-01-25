@@ -124,7 +124,12 @@ class XEP_0153(BasePlugin):
         try:
             iq = self.xmpp['xep_0054'].get_vcard(jid=jid.bare, ifrom=ifrom)
 
-            data = iq['vcard_temp']['PHOTO']['BINVAL']
+            try:
+                data = iq['vcard_temp']['PHOTO']['BINVAL']
+            except:
+                log.debug('Invalid vCard photo for %s', jid)
+                return
+
             if not data:
                 new_hash = ''
             else:
@@ -132,7 +137,7 @@ class XEP_0153(BasePlugin):
 
             self.api['set_hash'](jid, args=new_hash)
         except XMPPError:
-            log.debug('Could not retrieve vCard for %s' % jid)
+            log.debug('Could not retrieve vCard for %s', jid)
 
     def _recv_presence(self, pres, force=False):
         if pres['muc']['affiliation']:
