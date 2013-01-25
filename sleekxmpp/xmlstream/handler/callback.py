@@ -9,11 +9,8 @@
     :license: MIT, see LICENSE for more details
 """
 
-import logging
 import greenlet
 from sleekxmpp.xmlstream.handler.base import BaseHandler
-
-log = logging.getLogger(__name__)
 
 class Callback(BaseHandler):
 
