@@ -628,8 +628,13 @@ class XEP_0030(BasePlugin):
             iq -- The incoming disco#items stanza.
         """
         if iq['type'] == 'get':
-            log.debug("Received disco info query from " + \
-                      "<%s> to <%s>.", iq['from'], iq['to'])
+            try:
+                log.debug("Received disco info query from " + \
+                          "<%s> to <%s>.", iq['from'], iq['to'])
+            except:
+                # some jid is messed up, nothing we can do
+                log.info("Dropping invalid disco iq: %r", iq)
+                return
             info = self.api['get_info'](iq['to'],
                                         iq['disco_info']['node'],
                                         iq['from'],
