@@ -610,8 +610,6 @@ class XMLStream(object):
         log.debug("ELEMENT: %s", element)
         try:
             self.__spawn_event(element)
-        except RestartStream:
-            raise
         except:
             log.error("Error while processing element", exc_info=True)
 
@@ -1388,7 +1386,10 @@ class XMLStream(object):
         orig = arg
         try:
             return func(arg)
-        except (RestartStream, greenlet.GreenletExit):
+        except RestartStream:
+            if self.xml_root is not None:
+                self.restart_stream()
+        except greenlet.GreenletExit:
             raise
         except Exception as e:
             log.warn('Error processing event handler', exc_info=1)
@@ -1446,22 +1447,17 @@ class XMLStream(object):
 
                 self.xml_depth += 1
             elif event == XMLParserEventType.END:
-                if self.xml_depth == 2:
+                self.xml_depth -= 1
+                self.xml_root.clear()
+                if self.xml_depth == 1:
                     # If the current depth is 2 and we received an end tag,
                     # that means the element we just closed is a direct child
                     # of <stream> and we trigger our processing.
-                    try:
-                        self.process_xml(element)
-                    except RestartStream:
-                        if self.xml_root is not None:
-                            self.restart_stream()
-                        return
-                elif self.xml_depth == 1:
+                    self.process_xml(element)
+                elif self.xml_depth == 0:
                     # Since the current depth is 1 and we received an end tag,
                     # that means we just got </stream>.
                     self.stream_closed()
-                self.xml_depth -= 1
-                self.xml_root.clear()
 
 # To comply with PEP8, method names now use underscores.
 # Deprecated method names are re-mapped for backwards compatibility.
