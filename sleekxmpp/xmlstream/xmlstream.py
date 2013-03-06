@@ -323,7 +323,6 @@ class XMLStream(object):
 
         #: A mapping of XML namespaces to well-known prefixes.
         self.namespace_map = {StanzaBase.xml_ns: 'xml'}
-        self.attr_namespace_map = {}
 
         self.__thread = {}
         self.__root_stanza = []
@@ -982,8 +981,8 @@ class XMLStream(object):
         # and handler classes here.
 
         if name is None:
-            name = 'add_handler_%s' % self.getNewId()
-        self.registerHandler(XMLCallback(name, MatchXMLMask(mask), pointer,
+            name = 'add_handler_%s' % self.new_id()
+        self.register_handler(XMLCallback(name, MatchXMLMask(mask), pointer,
                                          once=disposable, instream=instream))
 
     def register_handler(self, handler, before=None, after=None):

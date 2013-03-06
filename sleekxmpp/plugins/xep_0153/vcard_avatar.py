@@ -91,10 +91,9 @@ class XEP_0153(BasePlugin):
             else:
                 new_hash = hashlib.sha1(data).hexdigest()
             self.api['set_hash'](self.xmpp.boundjid, args=new_hash)
+            self._allow_advertising.set()
         except XMPPError:
             log.debug('Could not retrieve vCard for %s' % self.xmpp.boundjid.bare)
-
-        self._allow_advertising.set()
 
     def _end(self, event):
         self._allow_advertising.clear()
@@ -141,7 +140,8 @@ class XEP_0153(BasePlugin):
 
     def _recv_presence(self, pres, force=False):
         if pres['muc']['affiliation']:
-            # no avatar updates for muc
+            # Don't process vCard avatars for MUC occupants
+            # since they all share the same bare JID.
             return
 
         if not force and self.defer_updates:

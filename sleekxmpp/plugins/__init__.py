@@ -11,15 +11,13 @@ from sleekxmpp.plugins.base import register_plugin, load_plugin
 
 
 __all__ = [
-    # Non-standard
-    'gmail_notify',  # Gmail searching and notifications
-
     # XEPS
     'xep_0004',  # Data Forms
     'xep_0009',  # Jabber-RPC
     'xep_0012',  # Last Activity
     'xep_0013',  # Flexible Offline Message Retrieval
     'xep_0016',  # Privacy Lists
+    'xep_0020',  # Feature Negotiation
     'xep_0027',  # Current Jabber OpenPGP Usage
     'xep_0030',  # Service Discovery
     'xep_0033',  # Extended Stanza Addresses
@@ -33,8 +31,10 @@ __all__ = [
     'xep_0060',  # Pubsub (Client)
     'xep_0065',  # SOCKS5 Bytestreams
     'xep_0066',  # Out of Band Data
+    'xep_0071',  # XHTML-IM
     'xep_0077',  # In-Band Registration
 #   'xep_0078',  # Non-SASL auth. Don't automatically load
+    'xep_0079',  # Advanced Message Processing
     'xep_0080',  # User Location
     'xep_0082',  # XMPP Date and Time Profiles
     'xep_0084',  # User Avatar

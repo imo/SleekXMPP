@@ -78,7 +78,7 @@ class PLAIN(Mech):
 
     def adjust(self, stanza):
         gauth_ns = 'http://www.google.com/talk/protocol/auth'
-        stanza.stream.attr_namespace_map[gauth_ns] = 'ga'
+        stanza.stream.namespace_map[gauth_ns] = 'ga'
         stanza._set_attr('{%s}client-uses-full-bind-result' % gauth_ns, 'true')
 
 @sasl_mech(100)

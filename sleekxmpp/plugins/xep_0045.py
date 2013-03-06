@@ -125,11 +125,11 @@ class XEP_0045(BasePlugin):
         self.xep = '0045'
         # load MUC support in presence stanzas
         register_stanza_plugin(Presence, MUCPresence)
-        self.xmpp.registerHandler(Callback('MUCPresence', MatchXMLMask("<presence xmlns='%s' />" % self.xmpp.default_ns), self.handle_groupchat_presence))
-        self.xmpp.registerHandler(Callback('MUCMessage', MatchXMLMask("<message xmlns='%s' type='groupchat'><body/></message>" % self.xmpp.default_ns), self.handle_groupchat_message))
-        self.xmpp.registerHandler(Callback('MUCSubject', MatchXMLMask("<message xmlns='%s' type='groupchat'><subject/></message>" % self.xmpp.default_ns), self.handle_groupchat_subject))
-        self.xmpp.registerHandler(Callback('MUCConfig', MatchXMLMask("<message xmlns='%s' type='groupchat'><x xmlns='http://jabber.org/protocol/muc#user'><status/></x></message>" % self.xmpp.default_ns), self.handle_config_change))
-        self.xmpp.registerHandler(Callback('MUCInvite', MatchXPath("{%s}message/{%s}x/{%s}invite" % (
+        self.xmpp.register_handler(Callback('MUCPresence', MatchXMLMask("<presence xmlns='%s' />" % self.xmpp.default_ns), self.handle_groupchat_presence))
+        self.xmpp.register_handler(Callback('MUCMessage', MatchXMLMask("<message xmlns='%s' type='groupchat'><body/></message>" % self.xmpp.default_ns), self.handle_groupchat_message))
+        self.xmpp.register_handler(Callback('MUCSubject', MatchXMLMask("<message xmlns='%s' type='groupchat'><subject/></message>" % self.xmpp.default_ns), self.handle_groupchat_subject))
+        self.xmpp.register_handler(Callback('MUCConfig', MatchXMLMask("<message xmlns='%s' type='groupchat'><x xmlns='http://jabber.org/protocol/muc#user'><status/></x></message>" % self.xmpp.default_ns), self.handle_config_change))
+        self.xmpp.register_handler(Callback('MUCInvite', MatchXPath("{%s}message/{%s}x/{%s}invite" % (
             self.xmpp.default_ns,
             'http://jabber.org/protocol/muc#user',
             'http://jabber.org/protocol/muc#user')), self.handle_groupchat_invite))
@@ -198,30 +198,9 @@ class XEP_0045(BasePlugin):
             if entry is not None and entry['jid'].full == jid:
                 return nick
 
-    def getRoomForm(self, room, ifrom=None):
-        iq = self.xmpp.makeIqGet()
-        iq['to'] = room
-        if ifrom is not None:
-            iq['from'] = ifrom
-        query = ET.Element('{http://jabber.org/protocol/muc#owner}query')
-        iq.append(query)
-        # For now, swallow errors to preserve existing API
-        try:
-            result = iq.send()
-        except IqError:
-            return False
-        except IqTimeout:
-            return False
-        xform = result.xml.find('{http://jabber.org/protocol/muc#owner}query/{jabber:x:data}x')
-        if xform is None: return False
-        form = self.xmpp.plugin['old_0004'].buildForm(xform)
-        return form
-
     def configureRoom(self, room, form=None, ifrom=None):
         if form is None:
-            form = self.getRoomForm(room, ifrom=ifrom)
-            #form = self.xmpp.plugin['old_0004'].makeForm(ftype='submit')
-            #form.addField('FORM_TYPE', value='http://jabber.org/protocol/muc#roomconfig')
+            form = self.getRoomConfig(room, ifrom=ifrom)
         iq = self.xmpp.makeIqSet()
         iq['to'] = room
         if ifrom is not None:
