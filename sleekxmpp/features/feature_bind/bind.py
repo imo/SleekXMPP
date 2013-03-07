@@ -48,8 +48,15 @@ class FeatureBind(BasePlugin):
         if self.xmpp.requested_jid.resource:
             iq['bind']['resource'] = self.xmpp.requested_jid.resource
         response = iq.send(now=True)
-
-        self.xmpp.boundjid = JID(response['bind']['jid'], cache_lock=True)
+        if response['bind']['jid']:
+            # RFC 3921 specifies that servers MUST include a jid element.
+            self.xmpp.boundjid = JID(response['bind']['jid'], cache_lock=True)
+        elif response['bind']['resource']:
+            # VKontakte sends a resource element instead of jid.
+            self.xmpp.boundjid = JID(self.xmpp.requested_jid,
+                    resource=response['bind']['resource'])
+        else:
+            log.error("Bind stanza missing JID: %s" % iq)
         self.xmpp.bound = True
         self.xmpp.event('session_bind', self.xmpp.boundjid, direct=True)
         self.xmpp.session_bind_event = True
