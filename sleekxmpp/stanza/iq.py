@@ -11,11 +11,10 @@ from sleekxmpp.stanza.rootstanza import RootStanza
 from sleekxmpp.xmlstream import StanzaBase, ET
 from sleekxmpp.xmlstream.handler import Callback
 from sleekxmpp.xmlstream.matcher import MatcherId
-from sleekxmpp.exceptions import IqError
+from sleekxmpp.exceptions import IqTimeout, IqError
 
 
 class Iq(RootStanza):
-
     """
     XMPP <iq> stanzas, or info/query stanzas, are XMPP's method of
     requesting and modifying information, similar to HTTP's GET and
@@ -159,6 +158,12 @@ class Iq(RootStanza):
         StanzaBase.reply(self, clear)
         return self
 
+    def __handler_name(self):
+        return 'IqCallback_%s' % self['id']
+
+    def __timeout_name(self):
+        return 'IqTimeout_%s' % self['id']
+
     def send(self, block=True, timeout=None, callback=None, now=False, timeout_callback=None):
         """
         Send an <iq> stanza over the XML stream.
@@ -194,12 +199,13 @@ class Iq(RootStanza):
         """
         if timeout is None:
             timeout = self.stream.response_timeout
+        handler_name = self.__handler_name()
+        timeout_name = self.__timeout_name()
         if callback is not None and self['type'] in ('get', 'set'):
-            handler_name = 'IqCallback_%s' % self['id']
             if timeout_callback:
                 self.callback = callback
                 self.timeout_callback = timeout_callback
-                self.stream.schedule('IqTimeout_%s' % self['id'],
+                self.stream.schedule(timeout_name,
                                      timeout,
                                      self._fire_timeout,
                                      repeat=False)
@@ -217,17 +223,38 @@ class Iq(RootStanza):
             return handler_name
         elif block and self['type'] in ('get', 'set'):
             current = greenlet.getcurrent()
-            handler_name = 'IqCallback_%s' % self['id']
             handler = Callback(handler_name,
                                MatcherId(self['id']),
                                None,
                                once=True,
-                               greenlet = current)
+                               greenlet=current)
+
+            def timeout_callback():
+                self.stream.remove_handler(handler_name)
+                if handler:
+                    return handler.run(IqTimeout)
+
+            # Fire the callback with the payload None to indicate a timeout.
+            # Note that the callback in this case switches to our greenlet.
+            self.stream.schedule(timeout_name,
+                    timeout,
+                    timeout_callback,
+                    repeat=False)
+
             self.stream.register_handler(handler)
             StanzaBase.send(self, now=now)
             self.stream.waiting_greenlets.add(current)
             result = current.parent.switch()
             self.stream.waiting_greenlets.remove(current)
+            self.stream.unschedule(timeout_name)
+            handler = None
+
+            if result is IqTimeout:
+                # We hit the return value from the scheduled callback.
+                # This means the normal handler has not fired yet.
+                raise IqTimeout(self)
+            # In this case, we got the Iq response. Remove the timeout.
+
             if result['type'] == 'error':
                 raise IqError(result)
             return result
@@ -236,12 +263,12 @@ class Iq(RootStanza):
 
     def _handle_result(self, iq):
         # we got the IQ, so don't fire the timeout
-        self.stream.scheduler.remove('IqTimeout_%s' % self['id'])
+        self.stream.unschedule(self.__timeout_name())
         self.callback(iq)
 
     def _fire_timeout(self):
         # don't fire the handler for the IQ, if it finally does come in
-        self.stream.remove_handler('IqCallback_%s' % self['id'])
+        self.stream.remove_handler(self.__handler_name())
         self.timeout_callback(self)
 
     def _set_stanza_values(self, values):

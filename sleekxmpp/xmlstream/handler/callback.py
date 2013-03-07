@@ -70,16 +70,20 @@ class Callback(BaseHandler):
                               processing. This should only be used by
                               :meth:`prerun()`. Defaults to ``False``.
         """
-        if self._greenlet:
-            res = payload
-            # after returning, the current greenlet dies
-            # and execution continues in the parent greenlet
-            greenlet.getcurrent().parent = self._greenlet
-        else:
-            res = self._pointer(payload)
+        pointer = self._pointer
         if self._once:
             self._destroy = True
             del self._pointer
+        if self._greenlet:
+            greenlet.getcurrent().parent = self._greenlet.parent
+            self._greenlet.parent = greenlet.getcurrent()
+            # after switching, we will return to the current greenlet.
+            # After the current greenlet dies, execution continues in the
+            # parent of _greenlet (which is often, but not always, the
+            # main greenlet)
+            res = self._greenlet.switch(payload)
+        else:
+            res = pointer(payload)
         return res
 
     def __str__(self):
