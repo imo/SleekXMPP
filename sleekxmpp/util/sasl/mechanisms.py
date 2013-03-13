@@ -499,8 +499,11 @@ class DIGEST(Mech):
             self.qop = b'auth'
             if 'nonce' in data:
                 self.nonce = data['nonce']
-            if 'realm' in data and not self.credentials['realm']:
-                self.credentials['realm'] = data['realm']
+            if not self.credentials['realm']:
+                if 'realm' in data:
+                    self.credentials['realm'] = data['realm']
+                else:
+                    self.credentials['realm'] = self.credentials['service-name']
 
             return self.respond()
 
