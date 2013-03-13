@@ -105,7 +105,8 @@ class FeatureMechanisms(BasePlugin):
             elif value == 'host':
                 result[value] = creds.get('host', self.xmpp.requested_jid.domain)
             elif value == 'realm':
-                result[value] = creds.get('realm', self.xmpp.requested_jid.domain)
+                # None to use the default realm passed by the server.
+                result[value] = creds.get('realm', None)
             elif value == 'service-name':
                 result[value] = creds.get('service-name', self.xmpp._service_name)
             elif value == 'service':
