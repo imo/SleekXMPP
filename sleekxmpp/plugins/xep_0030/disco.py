@@ -422,7 +422,7 @@ class XEP_0030(BasePlugin):
         iq['from'] = kwargs.get('ifrom', kwargs.get('dfrom', ''))
         iq['to'] = jid
         iq['type'] = 'get'
-        iq['disco_items']['node'] = node if node else ''
+        iq['disco_items']['node'] = node if node else None
         if kwargs.get('iterator', False) and self.xmpp['xep_0059']:
             return self.xmpp['xep_0059'].iterate(iq, 'disco_items')
         else:
