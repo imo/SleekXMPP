@@ -337,7 +337,7 @@ class DIGEST(Mech):
     name = 'DIGEST'
     use_hashes = True
     required_credentials = set(['username', 'password', 'realm', 'service', 'host'])
-    optional_credentials = set(['authzid', 'service-name'])
+    optional_credentials = set(['authzid', 'service-name', 'digest-uri-realm'])
     security = set(['encrypted', 'unencrypted_digest'])
 
     def setup(self, name):
@@ -455,6 +455,12 @@ class DIGEST(Mech):
         serv_type = self.credentials['service']
         serv_name = self.credentials['service-name']
         host = self.credentials['host']
+
+        if self.credentials['digest-uri-realm']:
+            # This is what Pidgin does, and some servers refuse to authenticate
+            # unless we emulate the same behavior in
+            # libpurple/protocols/jabber/auth_digest_md5.c
+            return serv_type + b'/' + self.credentials['realm']
 
         uri = serv_type + b'/' + host
         if serv_name and host != serv_name:
