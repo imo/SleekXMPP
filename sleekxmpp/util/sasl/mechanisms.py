@@ -505,7 +505,9 @@ class DIGEST(Mech):
                 if 'realm' in data:
                     self.credentials['realm'] = data['realm']
                 else:
-                    self.credentials['realm'] = self.credentials['service-name']
+                    # 'host' in this case means the domain part in the JID.
+                    # This is what Pidgin does, and some servers expect this.
+                    self.credentials['realm'] = self.credentials['host']
 
             return self.respond()
 
