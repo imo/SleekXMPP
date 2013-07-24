@@ -82,8 +82,11 @@ class Callback(BaseHandler):
             # parent of _greenlet (which is often, but not always, the
             # main greenlet)
             res = self._greenlet.switch(payload)
-        else:
+        elif pointer:
             res = pointer(payload)
+        else:
+            imolog.warning("No greenlet or callback! Payload: %r" % payload)
+            res = None
         return res
 
     def __str__(self):
