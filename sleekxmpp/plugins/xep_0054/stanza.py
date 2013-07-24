@@ -255,8 +255,11 @@ class BinVal(ElementBase):
         parent = self.parent()
         if value:
             xml = ET.Element('{%s}BINVAL' % self.namespace)
-            xml.text = bytes(base64.b64encode(value)).decode('utf-8')
-            parent.append(xml)
+            try:
+                xml.text = bytes(base64.b64encode(value)).decode('utf-8')
+                parent.append(xml)
+            except TypeError as e:
+                imolog.info("Failed to decode icon: %s" % e)
 
     def get_binval(self):
         parent = self.parent()

@@ -295,7 +295,8 @@ class ClientXMPP(BaseXMPP):
         valid_subscriptions = ('to', 'from', 'both', 'none', 'remove')
         for jid, item in items.items():
             if item['subscription'] in valid_subscriptions:
-                roster[jid]['name'] = item['name']
+                if item['name']:
+                    roster[jid]['name'] = item['name']
                 roster[jid]['groups'] = item['groups']
                 roster[jid]['from'] = item['subscription'] in ('from', 'both')
                 roster[jid]['to'] = item['subscription'] in ('to', 'both')
