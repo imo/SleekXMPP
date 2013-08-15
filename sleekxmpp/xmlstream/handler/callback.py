@@ -11,6 +11,10 @@
 
 import greenlet
 from sleekxmpp.xmlstream.handler.base import BaseHandler
+import logging
+
+log = logging.getLogger(__name__)
+
 
 class Callback(BaseHandler):
 
@@ -85,7 +89,7 @@ class Callback(BaseHandler):
         elif pointer:
             res = pointer(payload)
         else:
-            imolog.warning("No greenlet or callback! Payload: %r" % payload)
+            log.warning("No greenlet or callback! Payload: %r" % payload)
             res = None
         return res
 
