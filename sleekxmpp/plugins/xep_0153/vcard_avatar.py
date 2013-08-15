@@ -92,8 +92,10 @@ class XEP_0153(BasePlugin):
                 new_hash = hashlib.sha1(data).hexdigest()
             self.api['set_hash'](self.xmpp.boundjid, args=new_hash)
             self._allow_advertising.set()
-        except XMPPError:
-            log.debug('Could not retrieve vCard for %s' % self.xmpp.boundjid.bare)
+        except TypeError:
+            log.debug('Invalid vCard photo for %s', self.xmpp.boundjid.bare)
+        except:
+            log.debug('Could not retrieve vCard for %s', self.xmpp.boundjid.bare)
 
     def _end(self, event):
         self._allow_advertising.clear()
@@ -123,11 +125,7 @@ class XEP_0153(BasePlugin):
         try:
             iq = self.xmpp['xep_0054'].get_vcard(jid=jid.bare, ifrom=ifrom)
 
-            try:
-                data = iq['vcard_temp']['PHOTO']['BINVAL']
-            except:
-                log.debug('Invalid vCard photo for %s', jid)
-                return
+            data = iq['vcard_temp']['PHOTO']['BINVAL']
 
             if not data:
                 new_hash = ''
@@ -135,7 +133,9 @@ class XEP_0153(BasePlugin):
                 new_hash = hashlib.sha1(data).hexdigest()
 
             self.api['set_hash'](jid, args=new_hash)
-        except XMPPError:
+        except TypeError:
+            log.debug('Invalid vCard photo for %s', jid)
+        except:
             log.debug('Could not retrieve vCard for %s', jid)
 
     def _recv_presence(self, pres, force=False):
